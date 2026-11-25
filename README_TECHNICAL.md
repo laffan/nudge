@@ -59,6 +59,7 @@ src/
                      dragged (`user-select: none` in chat.css)
     chat/Sources     source chips, the attach menu, the goal screen's drop zone
     ReviewButton     Review, with its menu (include the attached PDFs or not)
+    CopyButton       the document's copy menu: Markdown, or as a Google Doc
     DocumentPane     the editor's column: title, word count, copy / export, and
                      Review last; Suggest placement's requests and document
                      references carried out
@@ -93,6 +94,8 @@ src/
     types.ts         shared shapes: a document is goal + messages + reviews +
                      content + sources, and the review point being worked on
     store.ts         useApp (what's open and happening), usePrefs (this device, persisted)
+    googleDoc.ts     Copy as Google Doc (Hush's): Markdown → the HTML Google Docs
+                     reads, put on the clipboard as text/html beside the Markdown
     tauri.ts         invoke / invokeStreaming: Tauri inside the app,
                      browserBackend.ts in a plain browser
     documents.ts     create / open / save (coalesced) / delete / rename
@@ -322,6 +325,20 @@ press and puts the scroll back, so CodeMirror finds it focused and reads both
 positions from the same layout. For the rest of the press (at most 250 ms) any
 scroll of the editor is undone, for a WebKit that scrolls a frame later. Typewriter
 mode likewise centres a clicked line only once the button is up (`modes.ts`).
+
+## Copy as Google Doc
+
+`lib/googleDoc.ts`, Hush's `markdown-to-html.js` and `copy-command.js` in
+TypeScript, less Hush's tab markers and Google-comment syntax. The whole document,
+%%comments%% left out, becomes a small HTML subset Google Docs keeps on paste:
+headings, paragraphs with a 10 pt space after (the blank line between them), nested
+lists, block quotes as paragraphs indented 36 pt (Google Docs has no quote style),
+code, rules, and inline bold, italics, strikethrough, code, links and
+==highlights== (in Google Docs' own yellow). A bulleted and a numbered list next to
+each other stay two lists. It goes on the clipboard through `ClipboardItem`, as
+text/html with the Markdown as text/plain for places that take only text; where
+there is no ClipboardItem, a hidden editable element holding the HTML is selected
+and copied.
 
 ## Suggest placement
 

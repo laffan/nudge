@@ -1,6 +1,6 @@
 // The document column: the writer's text in Hush's editor, under its
-// title, with the word count, the ways out (copy as Markdown, export a .md
-// file) and, last, Review. The editor is made afresh for each document, so
+// title, with the word count, the ways out (copy, as Markdown or as a
+// Google Doc; export a .md file) and, last, Review. The editor is made afresh for each document, so
 // undo never reaches into another one. It answers the conversation's
 // requests: Add to document, Suggest placement, and the words a reply or
 // review points to ([[doc:…]]).
@@ -13,7 +13,8 @@ import { invoke, isTauri } from "../lib/tauri";
 import { findInDocument, findPlacement, showPlacement } from "../editor/placement";
 import { caretClasses, caretColor } from "../editor/caret";
 import { copyText } from "./chat/MessageBubble";
-import { CopyIcon, ExportIcon } from "./Icons";
+import { CopyButton } from "./CopyButton";
+import { ExportIcon } from "./Icons";
 import { ReviewButton } from "./ReviewButton";
 
 export let activeEditor: EditorHandles | null = null;
@@ -158,9 +159,7 @@ export function DocumentPane() {
         />
         <div className="doc-head-tools">
           {prefs.showWordCount && <span className="word-count">{words.toLocaleString()} words</span>}
-          <button className="icon-btn" title="Copy as Markdown" onClick={() => { copyText(exportMarkdown(content)); toast("Copied as Markdown"); }}>
-            <CopyIcon size={15} />
-          </button>
+          <CopyButton />
           <button className="icon-btn" title="Export as a Markdown file" onClick={() => void exportFile(title, content)}>
             <ExportIcon size={15} />
           </button>
