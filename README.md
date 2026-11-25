@@ -131,7 +131,10 @@ The rest of Settings:
   or your own); and whether it blinks, pulses or holds still while you pause. While
   you're in the conversation the caret stays where you left it, grey and faded, so
   you can see where Add to document will put a message.
-- **Editor:** writing modes, word count, spelling.
+- **Editor:** Hush's writing modes, word count, spelling. Focus mode (⌘S) dims all
+  but the sentence you're in. Typewriter mode (⌘⇧T) keeps the line you're writing on
+  a dashed line across the document, the text scrolling past it; drag the line to
+  where you like to write, and it stays there.
 - **Chat:** the conversation's text size, and whether the guide's questions are
   underlined.
 

@@ -137,6 +137,9 @@ export interface Prefs {
   caretAnimation: CaretAnimation;
   focusMode: boolean;
   typewriter: boolean;
+  /** Where typewriter mode's line sits, as a fraction of the document
+   *  column's height (dragged; editor/typewriter.ts). */
+  typewriterPosition: number;
   showWordCount: boolean;
   spellcheck: boolean;
   /** Text size of the conversation, in px. */
@@ -165,6 +168,7 @@ export const usePrefs = create<Prefs>()(
       caretAnimation: "blink",
       focusMode: false,
       typewriter: false,
+      typewriterPosition: 0.5,
       showWordCount: true,
       spellcheck: true,
       chatFontSize: 15,

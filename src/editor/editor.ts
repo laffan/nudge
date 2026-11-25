@@ -13,7 +13,8 @@ import { CommentExtension, HighlightExtension, commentMarkTag, commentTag, highl
 import { moveLineKeymap } from "./move-line.js";
 import { wrapOnSelection } from "./wrap-on-selection.js";
 import { instanceHighlightField } from "./select-instance-highlight.js";
-import { focusMode, typewriterMode } from "./modes";
+import { focusMode } from "./modes";
+import { typewriterMode } from "./typewriter";
 import { placementFlash } from "./placement";
 import { steadyClickFocus } from "./click-focus";
 import { quickFind } from "./quick-find";

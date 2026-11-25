@@ -75,7 +75,9 @@ src/
   editor/
     editor.ts        the CodeMirror setup; snippet drops; word count; export
     shortcuts.ts     every shortcut: id, default binding (Hush's), command
-    modes.ts         focus mode and typewriter mode
+    modes.ts         focus mode
+    typewriter.ts    typewriter mode: the dashed line, dragged to place, that
+                     the line being written stays on
     quick-find.ts    ⌘F: Hush's quick find, with the replace row; its marks
                      in find-highlight.ts
     caret.ts         the caret's shape, colour and animation; the caret at rest
@@ -326,7 +328,31 @@ the user agent, which WKWebView's doesn't have.
 press and puts the scroll back, so CodeMirror finds it focused and reads both
 positions from the same layout. For the rest of the press (at most 250 ms) any
 scroll of the editor is undone, for a WebKit that scrolls a frame later. Typewriter
-mode likewise centres a clicked line only once the button is up (`modes.ts`).
+mode likewise brings a clicked line to its dashed line only once the button is up
+(`typewriter.ts`).
+
+## Typewriter mode
+
+`editor/typewriter.ts`, after Hush's (`plugins/typewriter.js` and its pane line). A
+view plugin, in the editor's configuration while the mode is on (a compartment in
+editor.ts), so turning the mode off takes everything below away.
+
+- **The line.** A dashed rule in the accent across the document column (`.tw-line`,
+  document.css), drawn through the middle of a 7 px strip that can be dragged with
+  a mouse, trackpad or finger (pointer events, `touch-action: none`). Where it sits
+  is a fraction of the column's height, from 0.15 to 0.85, saved on release
+  (`Prefs.typewriterPosition`, 0.5 to begin with).
+- **The caret on the line.** After each edit, selection change or return of focus,
+  a measure pass scrolls so the foot of the caret's line meets the dashed line. A
+  click waits for the button to come up (see above). A change of the column's size
+  (a ResizeObserver) moves the line and, while the writer is in the text, the caret
+  with it.
+- **Room at the ends.** `--tw-top` (padding on the scroller: the line's height in
+  the column, less the first line and the content's own top padding) and
+  `--tw-runway` (padding at the foot of the content, not the scroller, which WebKit
+  doesn't count as scrollable) let the first and last lines reach the line. Hush
+  adds blank lines to the document for the second; Nudge doesn't touch the
+  document.
 
 ## Copy as Google Doc
 

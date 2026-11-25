@@ -14,7 +14,7 @@ export function EditorSettings() {
       </label>
       <label className="check">
         <input type="checkbox" checked={p.typewriter} onChange={(e) => p.set("typewriter", e.target.checked)} />
-        Typewriter mode — keep the line you're on mid-column (⌘⇧T)
+        Typewriter mode — the line you're on stays on a dashed line, which you can drag (⌘⇧T)
       </label>
       <h3>While writing</h3>
       <label className="check">
