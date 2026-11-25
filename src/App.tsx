@@ -10,7 +10,7 @@ import { Resizer } from "./components/Resizer";
 import { SettingsDialog } from "./components/settings/SettingsDialog";
 import { Sidebar } from "./components/Sidebar";
 import { ZoteroPicker } from "./components/ZoteroPicker";
-import { PlusIcon, SidebarIcon } from "./components/Icons";
+import { GearIcon, PlusIcon, SidebarIcon } from "./components/Icons";
 import { SHORTCUTS, bindingOf } from "./editor/shortcuts";
 import { matchesDomEvent } from "./editor/shortcuts-core.js";
 import { createDocument, lastDocId, openDocument, refreshDocList } from "./lib/documents";
@@ -50,8 +50,16 @@ function runAppShortcut(id: string): void {
   }
 }
 
+/** Shortcuts whose second firing undoes the first. On the iPad a press
+ *  can arrive twice, and a held key repeats; either left the sidebar where
+ *  it started. So, as in Hush (window-shortcuts.js, installPanelToggleGuard),
+ *  a repeat, or the same toggle again within 90 ms, is let go of. */
+const TOGGLES = new Set(["toggleSidebar", "toggleViewer"]);
+const TOGGLE_ECHO_MS = 90;
+
 function useAppShortcuts(): void {
   useEffect(() => {
+    let lastToggle = { id: "", at: -Infinity };
     const onKey = (e: KeyboardEvent) => {
       if (useApp.getState().settingsTab === "shortcuts") return; // recording a binding
       const overrides = usePrefs.getState().shortcuts;
@@ -60,6 +68,11 @@ function useAppShortcuts(): void {
         const b = bindingOf(s.id, overrides);
         if (b && matchesDomEvent(e, b)) {
           e.preventDefault();
+          if (TOGGLES.has(s.id)) {
+            const now = performance.now();
+            if (e.repeat || (lastToggle.id === s.id && now - lastToggle.at < TOGGLE_ECHO_MS)) return;
+            lastToggle = { id: s.id, at: now };
+          }
           runAppShortcut(s.id);
           return;
         }
@@ -141,12 +154,23 @@ export default function App() {
           <div className="sidebar-scrim" onClick={() => prefs.set("sidebarOpen", false)} />
         </>
       )}
-      <main className="main">
-        {!prefs.sidebarOpen && (
-          <button className="icon-btn sidebar-reopen" title="Show the document list (⌘\)" onClick={() => prefs.set("sidebarOpen", true)}>
+      {!prefs.sidebarOpen && (
+        // With the list closed, a narrow rail keeps its toggle (and New and
+        // Settings) in a place of their own, rather than over a column.
+        <nav className="rail">
+          <button className="icon-btn" title="Show the document list (⌘\)" onClick={() => prefs.set("sidebarOpen", true)}>
             <SidebarIcon />
           </button>
-        )}
+          <button className="icon-btn" title="New document (⌘N)" onClick={() => void createDocument()}>
+            <PlusIcon />
+          </button>
+          <span className="rail-gap" />
+          <button className="icon-btn" title="Settings (⌘,)" onClick={() => useApp.getState().openSettings("ai")}>
+            <GearIcon size={18} />
+          </button>
+        </nav>
+      )}
+      <main className="main">
         {!current ? (
           <Welcome />
         ) : (

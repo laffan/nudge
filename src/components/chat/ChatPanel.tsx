@@ -22,6 +22,14 @@ function GoalSetup({ doc }: { doc: NudgeDoc }) {
   const begin = () => void beginConversation(goal);
   return (
     <div className="goal-setup">
+      <label className="name-field">
+        <span>Name</span>
+        <input
+          value={doc.title === "Untitled" && !doc.titled ? "" : doc.title}
+          placeholder="Untitled"
+          onChange={(e) => updateCurrent((d) => ({ ...d, title: e.target.value || "Untitled", titled: Boolean(e.target.value.trim()) }))}
+        />
+      </label>
       <h1>What is this document for?</h1>
       <p className="goal-hint">
         Say what you want to write and who it's for. Nudge will ask the questions; the answers — and every word of the

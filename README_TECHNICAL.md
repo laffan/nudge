@@ -34,11 +34,18 @@ src/
   App.tsx            the window: list | [viewer] | conversation | document; app shortcuts
   main.tsx
   components/
-    Sidebar.tsx      the document list (Hush's files panel)
-    chat/ChatPanel   goal screen, goal card, conversation, composer
+    Sidebar.tsx      the document list (Hush's files panel): each row the
+                     document's name, its goal beneath, then its date. With the
+                     list closed, App.tsx shows a narrow rail (toggle, New,
+                     Settings) in its place
+    chat/ChatPanel   goal screen (name, goal, sources), goal card, conversation,
+                     composer. The name and the goal are separate; documents
+                     that earlier versions named after their goal show as
+                     Untitled (`shownTitle` in lib/documents.ts)
     chat/MessageBubble
                      a message: yours draggable (grip, or a selection inside it) and
-                     "Add to document"; the guide's as Markdown, citations as pills
+                     "Add to document"; the guide's as Markdown, citations as pills,
+                     its questions underlined (lib/ai/questions.ts)
     chat/Sources     source chips, the attach menu, the goal screen's drop zone
     DocumentPane     the editor's column: title, word count, copy / export
     PdfViewer        the source viewer: lazy pages, text layer, Zotero highlights,
@@ -74,10 +81,12 @@ src/
                      request), retrieval.ts (BM25 passages for the on-device model),
                      chat.ts (turns, streaming, offline fallback), citations.ts
                      (Zotero Helper's parser), models.ts (online catalog and prices),
-                     localModels.ts (the offline catalog and why)
+                     localModels.ts (the offline catalog and why), questions.ts
+                     (the sentences of a reply that ask something, underlined)
 src-tauri/src/
   lib.rs             every command; the opt-in smoke test of the on-device path
-  ios.rs             iPad only: the status bar hidden (tao's view controller)
+  ios.rs             iPad only: the status bar hidden (tao's view controller); the
+                     hardware keyboard handed to the page (after Hush)
   state.rs           data dir, HTTP client, settings, stop flags, the local engine
   settings.rs        keys, Zotero library, provider and models (settings.json)
   storage.rs         documents/<id>.json + index.json; sources/<id>.pdf + .text.json
@@ -132,6 +141,14 @@ src-tauri/src/
 
 The first message of a conversation (`kickoffMessage`) states the goal on the
 writer's behalf. It is shown as the goal card, not as a message of theirs.
+
+What the guide asks is underlined in its replies (`lib/ai/questions.ts`, a rehype
+plugin on the Markdown). A question is a sentence ending in "?". The plugin works
+per paragraph, list item and table cell, across the bold, italics and links inside
+the sentence. It leaves out a lead-in ("Before anything else: who…?" underlines
+from "who") and citation pills. A full stop after an abbreviation ("e.g.", "p. 4")
+doesn't end a sentence, and neither does punctuation followed by lower case
+('You said "why bother?" earlier.').
 
 ## Citations
 
@@ -226,6 +243,21 @@ builds.
   stays YES in `Info.ios.plist`: with NO, UIKit ignores the view controller, and
   apps built with the current SDK get no effect from
   `UIApplication.statusBarHidden`.
+- **The hardware keyboard reaches the page.** On iPad a key goes only to the first
+  responder: for the page, WebKit's content view. wry gives it that role on macOS
+  but not on iOS. WebKit takes it for a finger tap or a tap into text, never for a
+  trackpad click. So with a Magic Keyboard, ⌘\ and the other shortcuts did nothing
+  until text was tapped (Hush's README-TECHNICAL describes the same). `ios.rs`
+  ports Hush's `KeyboardFocus.swift`. It calls `becomeFirstResponder` on the
+  WKWebView at launch (retried for five seconds while the window appears), on
+  resume, and when `main.tsx` reports a trackpad click outside editable text
+  (`claim_keyboard`). It does so only while a hardware keyboard is attached
+  (`GCKeyboard.coalescedKeyboard`; GameController is loaded with `dlopen`, as the
+  generated project doesn't link it), never over a presented view controller, and
+  never when a view inside the web view already holds the role.
+- **Panel toggles fire once per press.** ⌘\ and ⌘⇧\ are the shortcuts whose second
+  firing undoes the first. A repeat, or the same toggle again within 90 ms, is let
+  go of (`App.tsx`, after Hush's `installPanelToggleGuard`).
 - **Nothing of the app's own starts in the top strip.** iPadOS 26 uses the window's
   top ~30 pt to drag, shrink or un-fullscreen the window, and to show the window
   controls. On iPad (`html.ipados`) each column's head starts below

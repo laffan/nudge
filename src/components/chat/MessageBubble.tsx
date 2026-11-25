@@ -12,6 +12,7 @@ import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CITE_SCHEME, citationLabel, linkifyCitations, parseCiteHref } from "../../lib/ai/citations";
 import { localLabel } from "../../lib/ai/localModels";
+import { rehypeQuestions } from "../../lib/ai/questions";
 import { modelLabel } from "../../lib/ai/models";
 import { useApp } from "../../lib/store";
 import type { ChatMessage, Source } from "../../lib/types";
@@ -121,6 +122,7 @@ export const MessageBubble = memo(function MessageBubble({
       <div className="msg-md">
         <Markdown
           remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeQuestions]}
           urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
           components={{
             a: ({ href, children }) =>
@@ -160,6 +162,7 @@ export function StreamingBubble({ text, status, sources }: { text: string; statu
         <div className="msg-md">
           <Markdown
             remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeQuestions]}
             urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
             components={{
               a: ({ href, children }) =>

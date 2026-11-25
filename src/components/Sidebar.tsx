@@ -1,8 +1,9 @@
-// The document list, after Hush's files panel: newest first, each with its
-// date; a filter at the top; rename and delete on each row (rename
-// inline, delete on a second press); and Settings at the foot.
+// The document list, after Hush's files panel: newest first, each row its
+// name, the goal beneath it, then its date; a filter at the top; rename and
+// delete on each row (rename inline, delete on a second press); and
+// Settings at the foot.
 import { useMemo, useState } from "react";
-import { createDocument, deleteDocument, openDocument, renameDocument } from "../lib/documents";
+import { createDocument, deleteDocument, openDocument, renameDocument, shownTitle } from "../lib/documents";
 import { useApp, usePrefs } from "../lib/store";
 import type { DocSummary } from "../lib/types";
 import { GearIcon, PencilIcon, PlusIcon, SearchIcon, SidebarIcon, TrashIcon } from "./Icons";
@@ -21,7 +22,8 @@ function Row({ doc, active }: { doc: DocSummary; active: boolean }) {
   const [name, setName] = useState(doc.title);
   const [confirm, setConfirm] = useState(false);
   const current = useApp((s) => (s.current?.id === doc.id ? s.current : null));
-  const title = current?.title ?? doc.title;
+  const title = current?.title ?? shownTitle(doc.title, doc.goal);
+  const goal = current?.goal ?? doc.goal;
 
   if (editing) {
     return (
@@ -47,8 +49,9 @@ function Row({ doc, active }: { doc: DocSummary; active: boolean }) {
     );
   }
   return (
-    <li className={`doc-row${active ? " active" : ""}`} onClick={() => void openDocument(doc.id)} title={doc.goal || undefined}>
+    <li className={`doc-row${active ? " active" : ""}`} onClick={() => void openDocument(doc.id)} title={goal || undefined}>
       <span className="doc-title">{title || "Untitled"}</span>
+      {goal && <span className="doc-goal">{goal}</span>}
       <span className="doc-date">
         {when(current?.updatedMs ?? doc.updatedMs)}
         {doc.words ? ` · ${doc.words.toLocaleString()} words` : ""}

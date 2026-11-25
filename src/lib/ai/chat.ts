@@ -3,7 +3,7 @@
 // stopping one midway. When an online provider can't be reached and an
 // on-device model is installed, the turn is answered on the device
 // instead (Settings → AI, "When offline…").
-import { newId, titleFromGoal, updateCurrent } from "../documents";
+import { newId, updateCurrent } from "../documents";
 import { invoke, invokeStreaming } from "../tauri";
 import { toast, useApp } from "../store";
 import type { ChatMessage, NudgeDoc, Provider, Settings, StreamEvent, Usage } from "../types";
@@ -26,12 +26,8 @@ export async function beginConversation(goal: string): Promise<void> {
     content: kickoffMessage(g, doc.sources.length),
     ts: Date.now(),
   };
-  updateCurrent((d) => ({
-    ...d,
-    goal: g,
-    title: d.titled ? d.title : titleFromGoal(g),
-    messages: [kickoff],
-  }));
+  // The goal is not the document's name: that stays as the writer set it.
+  updateCurrent((d) => ({ ...d, goal: g, messages: [kickoff] }));
   await runTurn();
 }
 

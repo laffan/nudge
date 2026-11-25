@@ -91,12 +91,15 @@ pub fn build_prompt(format: &str, system: &str, messages: &[super::Turn]) -> Str
 /// Drops a `<think>…</think>` block from the start of a streamed answer,
 /// should a model think anyway. Text is held back only while it could
 /// still be the start of the tag.
+// Only the engine uses it, so a build without local-llm doesn't.
+#[cfg_attr(not(feature = "local-llm"), allow(dead_code))]
 #[derive(Default)]
 pub struct ThinkFilter {
     buf: String,
     state: u8, // 0 = undecided, 1 = inside thinking, 2 = passing through
 }
 
+#[cfg_attr(not(feature = "local-llm"), allow(dead_code))]
 impl ThinkFilter {
     pub fn push(&mut self, text: &str) -> String {
         if self.state == 2 {

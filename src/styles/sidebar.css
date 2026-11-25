@@ -10,11 +10,13 @@
 .doc-row:hover { background: var(--bg-hover); }
 .doc-row.active { background: var(--bg-active); }
 .doc-title { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; }
-.doc-date { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-.doc-actions { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; background: inherit; }
+.doc-row:hover .doc-title { padding-right: 60px; }
+@media (pointer: coarse) { .doc-title { padding-right: 60px; } }
+.doc-goal { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; line-height: 1.35; color: var(--fg-soft); margin-top: 2px; }
+.doc-date { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.doc-actions { position: absolute; right: 6px; top: 6px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
 .doc-row:hover .doc-actions { opacity: 1; }
-.doc-row:hover .doc-actions, .doc-row.active .doc-actions { background: var(--bg-sidebar); border-radius: 6px; }
-.doc-actions button { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 5px; color: var(--muted); cursor: pointer; }
+.doc-actions button { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: none; background: none; border-radius: 5px; color: var(--muted); cursor: pointer; }
 .doc-actions button:hover { color: var(--fg); background: var(--bg-hover); }
 .doc-actions button.danger { color: #fff; background: var(--danger); }
 .doc-rename { width: 100%; font-size: 14px; padding: 3px 6px; border: 1px solid var(--accent); border-radius: 5px; background: var(--bg-raised); outline: none; }

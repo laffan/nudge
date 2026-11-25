@@ -210,6 +210,16 @@ fn local_unload(state: State<'_, AppState>) {
     state.local.unload();
 }
 
+/// iPad: hand the hardware keyboard to the page after a trackpad click that
+/// WebKit doesn't treat as focusing it (src/ios.rs). Elsewhere, nothing.
+#[tauri::command]
+fn claim_keyboard(app: tauri::AppHandle) {
+    #[cfg(target_os = "ios")]
+    ios::claim_keyboard(&app);
+    #[cfg(not(target_os = "ios"))]
+    let _ = app;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -248,6 +258,7 @@ pub fn run() {
             local_download,
             local_delete,
             local_unload,
+            claim_keyboard,
         ])
         .build(tauri::generate_context!())
         .expect("error while building Nudge")

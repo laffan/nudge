@@ -19,8 +19,15 @@ export async function refreshDocList(): Promise<void> {
   }
 }
 
-/** A title from the goal, until the writer names the document. */
-export function titleFromGoal(goal: string): string {
+/** A document's name as the list shows it. Earlier versions named a
+ *  document after its goal until the writer named it; one still carrying
+ *  such a name is shown as Untitled, as the name and the goal are separate
+ *  now (titleFromGoal is that old naming). */
+export function shownTitle(title: string, goal: string): string {
+  return goal && title === titleFromGoal(goal) ? "Untitled" : title;
+}
+
+function titleFromGoal(goal: string): string {
   const words = goal.replace(/\s+/g, " ").trim().split(" ");
   const t = words.slice(0, 8).join(" ");
   return words.length > 8 ? `${t}…` : t || "Untitled";
@@ -58,9 +65,11 @@ export async function openDocument(id: string): Promise<void> {
   await flushSave();
   app.setLoadingDoc(true);
   try {
-    const doc = await invoke<NudgeDoc>("load_document", { id });
+    const loaded = await invoke<NudgeDoc>("load_document", { id });
     // Documents written before a field existed get its default.
-    useApp.getState().setCurrent({ ...blankDoc(), ...doc });
+    const doc = { ...blankDoc(), ...loaded };
+    if (!doc.titled) doc.title = shownTitle(doc.title, doc.goal);
+    useApp.getState().setCurrent(doc);
     useApp.getState().closeViewer();
     rememberLastDoc(id);
   } catch (e) {

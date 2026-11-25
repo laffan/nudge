@@ -17,7 +17,7 @@ default = ["local-llm"]
 # On-device inference through llama.cpp (src/ai/local.rs). Without it the
 # app builds and runs with the online providers only, and Settings → AI
 # says the offline model is not part of this build.
-local-llm = ["dep:llama-cpp-2", "dep:encoding_rs"]
+local-llm = ["dep:llama-cpp-2", "dep:encoding_rs", "dep:rand"]
 
 [dependencies]
 tauri = { version = "2.12", features = [] }
@@ -37,7 +37,7 @@ reqwest = { version = "0.12", default-features = false, features = [
 ] }
 futures-util = "0.3"
 thiserror = "2"
-rand = "0.8"
+rand = { version = "0.8", optional = true }
 encoding_rs = { version = "0.8", optional = true }
 
 # llama.cpp. OpenMP is left out (Apple's toolchain has none; Metal does the
