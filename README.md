@@ -23,7 +23,7 @@ conversation, including page citations that open the PDF at the cited passage.
   (for example "OpenAI $0.0042 · Anthropic $0.0310"); hovering a service shows the
   cost by model. To its right, **Use Local** moves this document's conversation to
   the on-device model, with its attached sources; the costs then give way to
-  **Use APIs**, which moves it back. The choice is kept with the document, and
+  the on-device model's name and **Use APIs**, which moves it back. The choice is kept with the document, and
   Review keeps its own service.
 - **Document** (right). Hush's editor, with Hush's quick find: **⌘F** opens a small
   bar at the top of the document that marks the matches as you type (ignoring case)

@@ -258,7 +258,8 @@ The layout is lifted from Snorkle's `ui/chrome/settings.js`:
 Under the composer, `documentCosts` totals what the open document has cost by
 service, from the cost kept on each of its replies and reviews, with the detail by
 model and use on hover. To its right is Use Local; while the conversation is on the
-device, the costs give way to Use APIs (see "A turn, end to end"). Both are links in
+device, the costs give way to the on-device model's name ("On-device: Qwen3.5 4B")
+and Use APIs (see "A turn, end to end"). Both are links in
 the footer's own colour, told apart by their underline. Without a downloaded model,
 Use Local opens Settings → Offline model; without a key, Use APIs opens Settings →
 AI.

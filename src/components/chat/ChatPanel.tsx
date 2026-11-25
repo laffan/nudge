@@ -165,15 +165,16 @@ function Composer({ busy }: { busy: boolean }) {
 /** Under the composer: what this document has cost with each service used
  *  for it (its conversation and its reviews), with the detail by model on
  *  hover, and to its right Use Local, which moves the conversation to the
- *  on-device model. There the costs give way to Use APIs, which moves it
- *  back. The move is this document's own (NudgeDoc.chatService); the
+ *  on-device model. There the costs give way to the model answering and
+ *  Use APIs, which moves it back. The move is this document's own (NudgeDoc.chatService); the
  *  sources go with it, as the on-device model reads them (context.ts). */
 function CostFoot({ doc }: { doc: NudgeDoc }) {
   const settings = useApp((s) => s.settings);
   const keys = useApp((s) => s.keys);
   const openSettings = useApp((s) => s.openSettings);
   if (!settings) return <div className="chat-foot" />;
-  const chat = chatChoice(settings, keys, doc).provider;
+  const choice = chatChoice(settings, keys, doc);
+  const chat = choice.provider;
   const online = onlineChoice(settings, keys);
   const move = (to: "local" | "online") => {
     if (to === "local" && !settings.localModel) {
@@ -187,6 +188,7 @@ function CostFoot({ doc }: { doc: NudgeDoc }) {
   if (chat === "local") {
     return (
       <div className="chat-foot">
+        <span title="The on-device model answering this conversation">On-device: {localLabel(modelOf(settings, choice))}</span>
         <button
           className="foot-switch"
           title={online ? `Continue this conversation with ${modelLabel(modelOf(settings, online))}` : "Add an API key in Settings → AI"}
