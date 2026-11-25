@@ -97,15 +97,47 @@
 .chat-foot { display: flex; gap: 10px; justify-content: center; font-size: 11px; color: var(--muted); padding: 0 12px 8px; }
 .ipados .chat-foot { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 
-/* A review of the document (Review button): the reviewer's, set apart from
-   the guide's turns, each point with Work on this. */
-.msg-review { align-self: stretch; max-width: 100%; padding: 12px 14px; border: 1px solid var(--border-strong); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--bg-raised); }
-.review-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-.msg-review li { margin-bottom: 0.45em; }
-.take-up { margin-left: 8px; border: 1px solid var(--border-strong); background: none; border-radius: 999px; padding: 0 8px; height: 20px; font-size: 11px; color: var(--fg-soft); cursor: pointer; vertical-align: 1px; opacity: 0; transition: opacity 0.15s; }
-.msg-review li:hover .take-up, .take-up:focus { opacity: 1; }
-@media (pointer: coarse) { .take-up { opacity: 1; } }
+/* Words of the writer's document a reply or review points to ([[doc:…]]):
+   pressing one scrolls the document there. */
+.doc-ref { color: var(--link); text-decoration: none; border-bottom: 1px dotted currentColor; cursor: pointer; }
+.doc-ref:hover { border-bottom-style: solid; }
+.doc-ref svg { margin-left: 2px; vertical-align: -1px; }
+
+/* The review bar, attached under the goal (ReviewBar.tsx). */
+.review-bar { margin-top: 8px; border: 1px solid var(--border-strong); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--bg-raised); overflow: hidden; }
+.review-bar-head { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 2px; }
+.review-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border: none; background: none; padding: 7px 4px; cursor: pointer; text-align: left; font-size: 12.5px; color: var(--fg-soft); }
+.review-toggle.static { cursor: default; padding-left: 10px; }
+.chev { display: inline-flex; flex: none; color: var(--muted); transform: rotate(-90deg); transition: transform 0.15s; }
+.chev.open { transform: none; }
+.review-label { flex: none; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--accent); }
+.review-when { flex: none; white-space: nowrap; }
+.review-meta { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.working-title { color: var(--fg); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.earlier-link { flex: none; font-size: 12px; white-space: nowrap; }
+.review-body { border-top: 1px solid var(--border); padding: 10px 14px 12px; max-height: 42vh; overflow-y: auto; }
+.review-points { margin: 0 0 0.7em; padding-left: 1.4em; }
+.review-points li { margin-bottom: 0.5em; }
+.review-points li .msg-md p { margin-bottom: 0.25em; }
+/* The point's tools follow its last line, rather than taking one of their own. */
+.review-points li > .msg-md, .review-points li > .msg-md > p:last-child { display: inline; }
+.review-points li.done > .msg-md { opacity: 0.45; }
+.point-tools { display: inline-flex; align-items: center; gap: 10px; margin-left: 8px; vertical-align: 1px; }
+.point-done { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); }
+.point-tools .link { font-size: 11.5px; opacity: 0; }
+.take-up { border: 1px solid var(--border-strong); background: none; border-radius: 999px; padding: 0 9px; height: 21px; font-size: 11.5px; color: var(--fg-soft); cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.review-points li:hover .take-up, .review-points li:hover .point-tools .link, .take-up:focus, .point-tools .link:focus { opacity: 1; }
+@media (pointer: coarse) { .take-up, .point-tools .link { opacity: 1; } }
 .take-up:hover { border-color: var(--accent); color: var(--accent); }
+.review-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.review-foot .icon-btn { width: 24px; height: 24px; }
+.working-actions { display: flex; gap: 8px; margin-top: 10px; }
+.working-actions .btn { display: inline-flex; align-items: center; gap: 5px; }
+.earlier-reviews { list-style: none; margin: -4px -6px; padding: 0; }
+.earlier-reviews > li { border-bottom: 1px solid var(--border); }
+.earlier-reviews > li:last-child { border-bottom: 0; }
+.earlier-body { padding: 0 8px 10px 28px; }
+.chat-foot .cost { font-variant-numeric: tabular-nums; }
 
 /* A small tip over a message's tool (Suggest placement: "already in your
    document"). */

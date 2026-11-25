@@ -9,10 +9,11 @@
 // shared out: instructions and goal first, then the writer's annotations,
 // the document, the passages retrieved for this turn, and as much of the
 // conversation as is left, newest first.
-import type { ChatMessage, NudgeDoc, Source, ZoteroAnnotation } from "../types";
+import type { NudgeDoc, Source, ZoteroAnnotation } from "../types";
 import { sourcePages } from "../sources";
 import { markedText } from "../pdf/text";
-import { CITATIONS, GUIDE, REVIEW_SHARED, REVIEWER } from "./prompts";
+import { CITATIONS, DOC_REFS, GUIDE, REVIEW_SHARED, REVIEWER, workingOnBlock } from "./prompts";
+import { workingPoint } from "./reviews";
 import { retrieve } from "./retrieval";
 
 /** Rough characters per token for English prose. */
@@ -73,12 +74,23 @@ function withContext(message: string, context: string): string {
   return `${context}\n\n${message}`;
 }
 
-/** The conversation as the guide reads it. A review is the reviewer's,
- *  not the guide's: it is passed on as something the writer shared. */
-function asTurns(messages: ChatMessage[]): Built["messages"] {
-  return messages.map((m) =>
-    m.kind === "review" ? { role: "user", content: `${REVIEW_SHARED}\n\n${m.content}` } : { role: m.role, content: m.content },
-  );
+/** The conversation as the guide reads it, with each review where it was
+ *  made. A review is the reviewer's, not the guide's: it is passed on as
+ *  something the writer shared. */
+function asTurns(doc: NudgeDoc): Built["messages"] {
+  const turns: { ts: number; role: "user" | "assistant"; content: string }[] = [
+    ...doc.messages.map((m) => ({ ts: m.ts, role: m.role, content: m.content })),
+    ...doc.reviews.map((r) => ({ ts: r.ts, role: "user" as const, content: `${REVIEW_SHARED}\n\n${r.content}` })),
+  ];
+  // Stable, so messages of the same moment keep their order.
+  return turns.sort((a, b) => a.ts - b.ts).map(({ role, content }) => ({ role, content }));
+}
+
+/** What rides with the writer's latest message: their document, and the
+ *  review point they're working on, if any. */
+function turnContext(doc: NudgeDoc, docBlock: string): string {
+  const w = workingPoint(doc);
+  return w ? `${docBlock}\n\n${workingOnBlock(w.point.text)}` : docBlock;
 }
 
 /** A review of the document against the goal. Online, the sources go in
@@ -113,6 +125,7 @@ export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTok
   }
   const system = [
     REVIEWER,
+    DOC_REFS,
     anyText ? CITATIONS : "",
     `# The writer's goal\n\n${doc.goal.trim() || "(not stated)"}`,
     parts.length ? `# Sources\n\n${parts.join("\n\n---\n\n")}` : "# Sources\n\nNo sources are attached.",
@@ -140,15 +153,16 @@ export async function buildOnline(doc: NudgeDoc): Promise<Built> {
   }
   const system = [
     GUIDE,
+    DOC_REFS,
     parts.length ? CITATIONS : "",
     `# The writer's goal\n\n${doc.goal.trim() || "(not stated)"}`,
     parts.length ? `# Sources\n\n${parts.join("\n\n---\n\n")}` : "# Sources\n\nNo sources are attached.",
   ]
     .filter(Boolean)
     .join("\n\n");
-  const messages = asTurns(doc.messages);
+  const messages = asTurns(doc);
   const last = messages[messages.length - 1];
-  if (last?.role === "user") last.content = withContext(last.content, documentBlock(doc.content, 60_000));
+  if (last?.role === "user") last.content = withContext(last.content, turnContext(doc, documentBlock(doc.content, 60_000)));
   return { system, messages };
 }
 
@@ -161,6 +175,7 @@ export async function buildLocal(doc: NudgeDoc, nCtx: number, replyTokens: numbe
   const anyText = ready.some((s) => s.hasFile && (s.chars ?? 0) > 0);
   const system = [
     GUIDE,
+    DOC_REFS,
     anyText ? CITATIONS : "",
     `# The writer's goal\n\n${doc.goal.trim() || "(not stated)"}`,
     heads.length ? `# Sources\n\n${heads.join("\n\n")}` : "# Sources\n\nNo sources are attached.",
@@ -169,7 +184,7 @@ export async function buildLocal(doc: NudgeDoc, nCtx: number, replyTokens: numbe
     .join("\n\n");
 
   let left = budget - system.length;
-  const docBlock = documentBlock(doc.content, Math.max(800, Math.floor(budget * 0.22)));
+  const docBlock = turnContext(doc, documentBlock(doc.content, Math.max(800, Math.floor(budget * 0.22))));
   left -= docBlock.length;
 
   // Passages that bear on the moment: the goal and the latest exchange.
@@ -189,7 +204,7 @@ export async function buildLocal(doc: NudgeDoc, nCtx: number, replyTokens: numbe
 
   // The conversation, newest first, while it fits (the goal itself is
   // already in the system prompt).
-  const turns = asTurns(doc.messages);
+  const turns = asTurns(doc);
   const kept: Built["messages"] = [];
   for (let i = turns.length - 1; i >= 0; i--) {
     const t = turns[i];

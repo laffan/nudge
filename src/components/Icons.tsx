@@ -114,6 +114,32 @@ export const ReviewIcon = ({ size }: P) => (
   </Svg>
 );
 
+/** A reference into the writer's document, which is to the right. */
+export const DocLinkIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <path d="M5 12h13M13 6l6 6-6 6" />
+  </Svg>
+);
+
+export const ChevronIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+);
+
+export const CheckIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Svg>
+);
+
+export const ClockIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </Svg>
+);
+
 export const GripIcon = ({ size }: P) => (
   <Svg size={size}>
     <circle cx="9" cy="6" r="1" fill="currentColor" />

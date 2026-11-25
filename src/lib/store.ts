@@ -48,8 +48,9 @@ interface AppState {
   /** Characters to put into the document at its caret (bumped to repeat). */
   insertRequest: { text: string; nonce: number } | null;
   placementRequest: PlacementRequest | null;
-  /** Text to put in the composer, for the writer to edit and send. */
-  composerPrefill: { text: string; nonce: number } | null;
+  /** Words of the document to scroll to and light up (a [[doc:…]]
+   *  reference in a reply or review). */
+  docFocusRequest: { text: string; nonce: number } | null;
 
   setSettings: (s: Settings) => void;
   setKeys: (k: KeyStatus) => void;
@@ -67,7 +68,7 @@ interface AppState {
   dismissToast: (id: number) => void;
   insertIntoDocument: (text: string) => void;
   suggestPlacement: (text: string, mode: PlacementRequest["mode"]) => void;
-  prefillComposer: (text: string) => void;
+  showInDocument: (text: string) => void;
 }
 
 let toastId = 0;
@@ -85,7 +86,7 @@ export const useApp = create<AppState>((set, get) => ({
   toasts: [],
   insertRequest: null,
   placementRequest: null,
-  composerPrefill: null,
+  docFocusRequest: null,
 
   setSettings: (settings) => set({ settings }),
   setKeys: (keys) => set({ keys }),
@@ -111,7 +112,7 @@ export const useApp = create<AppState>((set, get) => ({
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   insertIntoDocument: (text) => set({ insertRequest: { text, nonce: Date.now() + Math.random() } }),
   suggestPlacement: (text, mode) => set({ placementRequest: { text, mode, nonce: Date.now() + Math.random() } }),
-  prefillComposer: (text) => set({ composerPrefill: { text, nonce: Date.now() + Math.random() } }),
+  showInDocument: (text) => set({ docFocusRequest: { text, nonce: Date.now() + Math.random() } }),
 }));
 
 export type Theme = "system" | "light" | "dark";

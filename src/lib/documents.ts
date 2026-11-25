@@ -5,7 +5,7 @@
 // put away.
 import { invoke } from "./tauri";
 import { toast, useApp } from "./store";
-import type { DocSummary, NudgeDoc } from "./types";
+import type { DocSummary, NudgeDoc, Review } from "./types";
 
 export function newId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -44,8 +44,32 @@ export function blankDoc(): NudgeDoc {
     updatedMs: now,
     content: "",
     messages: [],
+    reviews: [],
+    working: null,
     sources: [],
     costUsd: 0,
+  };
+}
+
+/** Reviews were once kept among the messages; they have a list of their
+ *  own now. */
+function migrate(doc: NudgeDoc): NudgeDoc {
+  const old = doc.messages.filter((m) => m.kind === "review");
+  if (old.length === 0) return doc;
+  const moved: Review[] = old.map((m) => ({
+    id: m.id,
+    ts: m.ts,
+    content: m.content,
+    provider: m.provider,
+    model: m.model,
+    usage: m.usage,
+    costUsd: m.costUsd,
+    done: [],
+  }));
+  return {
+    ...doc,
+    messages: doc.messages.filter((m) => m.kind !== "review"),
+    reviews: [...doc.reviews, ...moved].sort((a, b) => a.ts - b.ts),
   };
 }
 
@@ -67,7 +91,7 @@ export async function openDocument(id: string): Promise<void> {
   try {
     const loaded = await invoke<NudgeDoc>("load_document", { id });
     // Documents written before a field existed get its default.
-    const doc = { ...blankDoc(), ...loaded };
+    const doc = migrate({ ...blankDoc(), ...loaded });
     if (!doc.titled) doc.title = shownTitle(doc.title, doc.goal);
     useApp.getState().setCurrent(doc);
     useApp.getState().closeViewer();

@@ -38,17 +38,24 @@ src/
                      document's name, its goal beneath, then its date. With the
                      list closed, App.tsx shows a narrow rail (toggle, New,
                      Settings) in its place
-    chat/ChatPanel   goal screen (name, goal, sources), goal card, conversation,
-                     composer. The name and the goal are separate; documents
-                     that earlier versions named after their goal show as
-                     Untitled (`shownTitle` in lib/documents.ts)
+    chat/ChatPanel   goal screen (name, goal, sources), goal card, review bar,
+                     conversation, composer, and under it what the document has
+                     cost by service. The name and the goal are separate;
+                     documents that earlier versions named after their goal show
+                     as Untitled (`shownTitle` in lib/documents.ts)
+    chat/ReviewBar   the review bar under the goal: the latest review, its
+                     points (Work on this, Item complete, Stop working), the
+                     earlier reviews with their times
     chat/MessageBubble
                      a message: yours draggable (grip, or a selection inside it) and
-                     "Add to document"; the guide's as Markdown, citations as pills,
-                     its questions underlined (lib/ai/questions.ts)
+                     "Add to document"; the guide's as Markdown (`ReplyMarkdown`,
+                     also used by the review bar), citations as pills, references
+                     to the document as links into it, its questions underlined
+                     (lib/ai/questions.ts)
     chat/Sources     source chips, the attach menu, the goal screen's drop zone
-    DocumentPane     the editor's column: title, word count, Review, copy / export;
-                     Suggest placement's requests carried out
+    DocumentPane     the editor's column: title, word count, copy / export, and
+                     Review last; Suggest placement's requests and document
+                     references carried out
     PdfViewer        the source viewer: lazy pages, text layer, Zotero highlights,
                      a citation's passage found and marked
     ZoteroPicker     collections + search, tick works, attach
@@ -62,7 +69,7 @@ src/
     shortcuts.ts     every shortcut: id, default binding (Hush's), command
     modes.ts         focus mode and typewriter mode
     placement.ts     Suggest placement: the sentence a message would follow, and
-                     its brief light
+                     its brief light; where quoted words are (`findInDocument`)
     *.js             ported unchanged from Hush (same author): sentence-core,
                      sentence-navigator, sentence-delete, sentence-parenthetical,
                      word-shift, formatting, move-line, join-lines,
@@ -71,7 +78,8 @@ src/
                      shortcuts.js). Hush's cards and Desk Ratchet are stubbed out
                      where those files touched them.
   lib/
-    types.ts         shared shapes: a document is goal + messages + content + sources
+    types.ts         shared shapes: a document is goal + messages + reviews +
+                     content + sources, and the review point being worked on
     store.ts         useApp (what's open and happening), usePrefs (this device, persisted)
     tauri.ts         invoke / invokeStreaming: Tauri inside the app,
                      browserBackend.ts in a plain browser
@@ -87,8 +95,11 @@ src/
     ai/              prompts.ts (the guide's instructions), context.ts (building a
                      request), retrieval.ts (BM25 passages for the on-device model),
                      chat.ts (turns and reviews, streaming, offline fallback),
-                     usage.ts (the usage log, by day), citations.ts
-                     (Zotero Helper's parser), models.ts (online catalog and prices),
+                     reviews.ts (a review's points and titles, its time),
+                     usage.ts (the usage log, by model and by day; a document's
+                     cost by service), citations.ts (Zotero Helper's parser,
+                     and references to the document), models.ts (online
+                     catalog and prices),
                      localModels.ts (the offline catalog and why), questions.ts
                      (the sentences of a reply that ask something, underlined)
 src-tauri/src/
@@ -125,9 +136,10 @@ src-tauri/src/
      all), after its Zotero annotations and notes, with `[[page N]]` markers.
      Anthropic caches this block, and OpenAI caches a stable prefix on its own.
    - **The volatile part rides on the writer's latest message.** It is the document
-     as it stands (`<document>…</document>`) and, on the device, the passages
-     retrieved for this turn. Keeping it out of the system prompt keeps the cached
-     prefix intact.
+     as it stands (`<document>…</document>`), the review point being worked on
+     (`<working_on>…</working_on>`, when there is one) and, on the device, the
+     passages retrieved for this turn. Keeping it out of the system prompt keeps
+     the cached prefix intact.
    - **On the device, the whole request is fitted to the context window** at about
      3.6 characters per token, leaving room for the reply. The budget goes to the
      instructions and goal, then annotations (15%), the document (22%), passages
@@ -141,11 +153,51 @@ src-tauri/src/
 
 A **review** is the same path with the Review use. `buildReview` gives the reviewer
 (`REVIEWER` in prompts.ts) the goal, the sources and the document, not the
-conversation. Its reply goes into the conversation as an assistant message of kind
-"review", shown as a card with **Work on this** on each point; that puts the point in
-the composer. In the guide's history a review is passed on as something the writer
-shared (`REVIEW_SHARED`, role user), so the guide doesn't take the advice as its own.
-Its instructions tell it to leave the choosing of points to the writer.
+conversation. It streams into the review bar and is kept in `NudgeDoc.reviews`, not
+among the messages. In the guide's history each review is placed by its time among
+the messages and passed on as something the writer shared (`REVIEW_SHARED`, role
+user), so the guide doesn't take the advice as its own. Its instructions tell it to
+leave the choosing of points to the writer. Documents from before reviews had a list
+of their own have their review messages moved there when opened (`migrate` in
+lib/documents.ts).
+
+## The review bar
+
+`components/chat/ReviewBar.tsx`, attached under the goal.
+
+- **The points.** The reviewer is asked for a numbered list, each point opening
+  with a bold title. `lib/ai/reviews.ts` splits a review into its opening
+  sentences, its points and anything after them, and takes each point's title from
+  its bold opening (or its first eight words). A bulleted list is accepted when there
+  is no numbered one; a review with neither shows as plain Markdown.
+- **Positions.** A point is known by its position in the list: `Review.done` lists
+  the completed ones, and `NudgeDoc.working` (`{ reviewId, item }`) is the one being
+  worked on. Both are saved with the document.
+- **Two tiers of folding.** The review opens and closes as a whole. Work on this
+  narrows the bar to that one point, with Item complete and Stop working, and the
+  point folds on its own to a line ("Working on: Evidence"). Item complete adds the
+  point to `done` (greyed, with Reopen); Stop working leaves it as it was. Both clear
+  `working` and return the bar to the whole review. The fold states are the
+  component's own; a document opens with the review folded, and a new review opens
+  it.
+- **Earlier reviews.** Only the latest is worked from. A new review clears `working`.
+  The earlier ones are listed with their times (`reviewWhen`: "Today, 2:14 pm") and
+  open to be read, with their completed points marked.
+
+## References to the document
+
+The guide and the reviewer can point into the writer's document as they point into
+a source: `[[doc:exact words]]` (`DOC_REFS` in prompts.ts, three to twelve words
+copied from the `<document>` block). `citations.ts` turns each into a `nudge-doc:`
+link (quotation marks the model put around it are taken in), which `ReplyMarkdown`
+renders as the quoted words with an arrow. Pressing one sets `docFocusRequest`;
+`DocumentPane` finds the words with `findInDocument` and scrolls to them and lights
+them as Suggest placement does. The search ignores case, kinds of quote and dash,
+Markdown emphasis, spacing and a trailing ellipsis. When the whole quote isn't
+there, the first five words and then the last five will do. If nothing is found,
+a toast says the words aren't in the document any more. In questions.ts a
+reference counts as one piece, like a citation pill, so punctuation inside the
+quote doesn't end the sentence around it.
 
 ## Settings → AI
 
@@ -161,8 +213,14 @@ The layout is lifted from Snorkle's `ui/chrome/settings.js`:
   keyed). The models come from Test, or the price table before Test; for On-device,
   the downloaded GGUFs. The Rust core runs the on-device model the request names, or
   else the default (`local_model`).
-- **Usage.** `usage_add` / `usage_list` / `usage_reset`, totalled by local day in
-  `lib/ai/usage.ts`. A model the price table doesn't know makes the total "≥".
+- **Usage.** `usage_add` / `usage_list` / `usage_reset`, totalled by model (with its
+  service and the uses it served) and by local day in `lib/ai/usage.ts`. A model the
+  price table doesn't know makes its total "≥". Amounts under a cent show to four
+  places (`formatUsd`).
+
+Under the composer, `documentCosts` totals what the open document has cost by
+service, from the cost kept on each of its replies and reviews, with the detail by
+model and use on hover.
 
 ## Suggest placement
 
@@ -270,8 +328,9 @@ size, rebound shortcuts, custom model URLs, Test's model lists) live in localSto
 `npm run dev` without Tauri runs the interface against `lib/browserBackend.ts`. It
 keeps documents and settings in localStorage and PDFs in memory, and its guide is
 scripted. With a source attached, the scripted guide cites a real sentence of it, so
-citations and the viewer can be exercised. Zotero, model lists and downloads say they
-need the app.
+citations and the viewer can be exercised. The scripted review quotes the draft's
+own words as document references. Replies report the model asked for, so the cost
+estimates show. Zotero, model lists and downloads say they need the app.
 
 ## iOS linking
 

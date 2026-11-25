@@ -101,6 +101,9 @@
 .usage-table th:first-child, .usage-table td:first-child { text-align: left; }
 .usage-table th { font-weight: 600; color: var(--muted); }
 .usage-table tfoot td { font-weight: 700; border-bottom: 0; }
+.usage-table + .usage-caption { margin-top: 18px; }
+.usage-caption { font-size: 12px; font-weight: 600; color: var(--fg-soft); margin: 10px 0 2px; }
+.usage-sub { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 
 /* Settings → Chat's preview of the conversation at the chosen size. */
 .chat-sample { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin: 4px 0 8px; border-radius: 10px; background: var(--bg-chat); border: 1px solid var(--border); }

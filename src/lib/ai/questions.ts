@@ -6,8 +6,9 @@
 // run of text; `rehypeQuestions` applies that to each paragraph, list item
 // and table cell of a rendered reply, across the bold, italics and links
 // inside it, and wraps the question's text in <span class="ask"> — one span
-// per piece of text, so the underline runs on unbroken. Citation pills are
-// left out of the sentence's text and never wrapped.
+// per piece of text, so the underline runs on unbroken. Citation pills and
+// references to the document are left out of the sentence's text and
+// never wrapped.
 import type { Element, ElementContent, Root, Text } from "hast";
 
 // Not a sentence's end: "e.g.", "p. 4", "Dr.", an initial.
@@ -40,9 +41,13 @@ export function questionRanges(text: string): [number, number][] {
 const BLOCKS = new Set(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "dd", "dt"]);
 const NESTED_BLOCKS = new Set(["p", "ul", "ol", "blockquote", "pre", "table", "div", ...BLOCKS]);
 
-/** A citation pill (lib/ai/citations.ts makes them links of its own scheme). */
+/** A citation pill or a reference to the document (lib/ai/citations.ts
+ *  makes them links of their own schemes). A reference's quoted words
+ *  carry their own punctuation, which mustn't end the sentence around it;
+ *  it has its own underline. */
 function isCitation(el: Element): boolean {
-  return el.tagName === "a" && String(el.properties?.href ?? "").startsWith("nudge-cite:");
+  const href = String(el.properties?.href ?? "");
+  return el.tagName === "a" && (href.startsWith("nudge-cite:") || href.startsWith("nudge-doc:"));
 }
 
 interface Piece {

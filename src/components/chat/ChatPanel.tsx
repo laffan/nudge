@@ -1,16 +1,20 @@
 // The conversation column. A new document opens on its goal screen: what
 // the document is for, and the PDFs that bear on it. Once begun, the goal
-// stays at the head (it can be edited), the sources sit under it, the
-// conversation runs below, and the composer is at the foot.
+// stays at the head (it can be edited), with the review bar attached under
+// it once the document has been reviewed (ReviewBar.tsx) and the sources
+// under that; the conversation runs below, and the composer is at the
+// foot, over what the document has cost with each service.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { beginConversation, retryLast, sendMessage, stopReply } from "../../lib/ai/chat";
-import { formatUsd } from "../../lib/ai/models";
+import { formatUsd, modelLabel } from "../../lib/ai/models";
+import { documentCosts } from "../../lib/ai/usage";
 import { updateCurrent } from "../../lib/documents";
 import { providerLabel, choiceFor, readyFor } from "../../lib/settings";
 import { useApp, usePrefs } from "../../lib/store";
-import type { NudgeDoc } from "../../lib/types";
+import type { NudgeDoc, Provider } from "../../lib/types";
 import { RetryIcon, SendIcon, StopIcon } from "../Icons";
 import { MessageBubble, StreamingBubble } from "./MessageBubble";
+import { ReviewBar } from "./ReviewBar";
 import { AttachMenu, DropZone, SourceChip } from "./Sources";
 
 function GoalSetup({ doc }: { doc: NudgeDoc }) {
@@ -114,18 +118,6 @@ function GoalCard({ doc }: { doc: NudgeDoc }) {
 function Composer({ busy }: { busy: boolean }) {
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
-  const prefill = useApp((s) => s.composerPrefill);
-  // "Work on this" on a review's point: the writer's message to edit and send.
-  useEffect(() => {
-    if (!prefill) return;
-    setDraft(prefill.text);
-    requestAnimationFrame(() => {
-      const el = ref.current;
-      if (!el) return;
-      el.focus();
-      el.setSelectionRange(el.value.length, el.value.length);
-    });
-  }, [prefill]);
   const send = () => {
     const t = draft.trim();
     if (!t || busy) return;
@@ -168,6 +160,28 @@ function Composer({ busy }: { busy: boolean }) {
   );
 }
 
+/** Under the composer: the service answering the chat, and what this
+ *  document has cost with each service used for it (its conversation and
+ *  its reviews), with the detail by model on hover. */
+function CostFoot({ doc, chat }: { doc: NudgeDoc; chat: Provider | null }) {
+  const costs = documentCosts(doc);
+  const use = { chat: "chat", review: "review" } as const;
+  return (
+    <div className="chat-foot">
+      {chat && !costs.some((c) => c.provider === chat) && <span>{providerLabel(chat)}</span>}
+      {costs.map((c) => (
+        <span
+          key={c.provider}
+          className="cost"
+          title={c.parts.map((p) => `${p.model ? modelLabel(p.model) : "Unknown model"} (${use[p.use]}): ${formatUsd(p.costUsd)}`).join("\n")}
+        >
+          {providerLabel(c.provider)} {formatUsd(c.costUsd)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function ChatPanel() {
   const doc = useApp((s) => s.current);
   const messages = useApp((s) => s.current?.messages);
@@ -202,6 +216,7 @@ export function ChatPanel() {
     <section className="chat" style={style}>
       <header className="chat-head">
         <GoalCard doc={doc} />
+        <ReviewBar key={doc.id} doc={doc} sources={sources} />
         <div className="source-strip">
           {sources.map((s, i) => (
             <SourceChip key={s.id} source={s} n={i + 1} />
@@ -219,7 +234,7 @@ export function ChatPanel() {
         {messages.map((m) =>
           m.kind === "kickoff" ? null : <MessageBubble key={m.id} message={m} sources={sources} onInsert={insert} />,
         )}
-        {streaming && <StreamingBubble text={streaming.text} status={streaming.status} sources={sources} review={streaming.kind === "review"} />}
+        {streaming?.kind === "reply" && <StreamingBubble text={streaming.text} status={streaming.status} sources={sources} />}
         {awaiting && (
           <div className="msg-retry">
             No reply yet.{" "}
@@ -230,10 +245,7 @@ export function ChatPanel() {
         )}
       </div>
       <Composer busy={Boolean(streaming)} />
-      <div className="chat-foot">
-        {chatUse && <span>{providerLabel(chatUse)}</span>}
-        {doc.costUsd > 0 && <span title="What this conversation has cost">{formatUsd(doc.costUsd)}</span>}
-      </div>
+      <CostFoot doc={doc} chat={chatUse} />
     </section>
   );
 }

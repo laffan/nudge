@@ -49,8 +49,11 @@ export function usageCost(model: string, u: Usage | undefined): number {
   );
 }
 
+/** Dollars, to the cent; amounts under a cent to four places, since a
+ *  turn with a cheap model costs a fraction of one. */
 export function formatUsd(n: number): string {
-  if (n === 0) return "$0";
-  if (n < 0.01) return "<$0.01";
+  if (n === 0) return "$0.00";
+  if (n < 0.0001) return "<$0.0001";
+  if (n < 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(2)}`;
 }

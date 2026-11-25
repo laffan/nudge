@@ -7,15 +7,16 @@
 // the document there and flashes the sentence it would follow; pressing
 // also puts the caret after it, for Add to document. The guide's replies
 // render as Markdown, their [[cite:S:P:quote]] citations as pills that open
-// the source viewer at the page and mark the passage, and their questions
-// underlined. Its words can be copied, but carry no drag affordance: the
-// document is the writer's. A review (the document's Review button) shows
-// as a card of its own, each point with Work on this, which puts the point
-// in the composer for the writer to take up — or not.
+// the source viewer at the page and mark the passage, their
+// [[doc:words]] references as quotations that scroll the document to those
+// words and light them, and their questions underlined. Its words can be
+// copied, but carry no drag affordance: the document is the writer's.
+// (Reviews are shown in the review bar, ReviewBar.tsx, with the same
+// Markdown.)
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CITE_SCHEME, citationLabel, linkifyCitations, parseCiteHref } from "../../lib/ai/citations";
+import { CITE_SCHEME, DOC_SCHEME, citationLabel, linkifyCitations, parseCiteHref, parseDocHref, plainDocRefs } from "../../lib/ai/citations";
 import { localLabel } from "../../lib/ai/localModels";
 import { rehypeQuestions } from "../../lib/ai/questions";
 import { modelLabel } from "../../lib/ai/models";
@@ -23,7 +24,7 @@ import { useApp, usePrefs } from "../../lib/store";
 import type { ChatMessage, Source } from "../../lib/types";
 import { SNIPPET_TYPE } from "../../editor/editor";
 import { isInDocument } from "../../editor/placement";
-import { ArrowIntoIcon, CopyIcon, EyeIcon, GripIcon, TargetIcon } from "../Icons";
+import { ArrowIntoIcon, CopyIcon, DocLinkIcon, EyeIcon, GripIcon, TargetIcon } from "../Icons";
 
 export function copyText(text: string): void {
   void navigator.clipboard?.writeText(text).catch(() => {
@@ -70,64 +71,61 @@ function shortName(s: Source): string {
 }
 
 /** Plain text of a reply, citations written out, for copying. */
-function plain(content: string): string {
-  return content.replace(/\[\[\s*(?:cite|p)\s*:\s*\d+\s*:\s*(\d+)(?:-\d+)?(?:\s*:[^\]]*)?\]\]/gi, "(p. $1)");
+export function plain(content: string): string {
+  return plainDocRefs(content).replace(/\[\[\s*(?:cite|p)\s*:\s*\d+\s*:\s*(\d+)(?:-\d+)?(?:\s*:[^\]]*)?\]\]/gi, "(p. $1)");
 }
 
-/** A hast node's text, for a review point's "Work on this". */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function nodeText(node: any): string {
-  if (!node) return "";
-  if (node.type === "text") return String(node.value ?? "");
-  return (node.children ?? []).map(nodeText).join("");
+/** Words of the writer's document, quoted: pressing it scrolls the
+ *  document to them and lights them up. */
+function DocRef({ words, children }: { words: string; children: React.ReactNode }) {
+  const show = useApp((s) => s.showInDocument);
+  return (
+    <a
+      className="doc-ref"
+      href="#"
+      title="Show in your document"
+      onClick={(e) => {
+        e.preventDefault();
+        show(words);
+      }}
+    >
+      {children}
+      <DocLinkIcon size={11} />
+    </a>
+  );
 }
 
-/** A reply as Markdown: citations as pills, questions underlined (unless
- *  turned off in Settings → Chat), and for a review, each point with a way
- *  to take it up. */
-function ReplyMarkdown({ content, sources, review }: { content: string; sources: Source[]; review?: boolean }) {
+const keepScheme = (url: string) => (url.startsWith(CITE_SCHEME) || url.startsWith(DOC_SCHEME) ? url : defaultUrlTransform(url));
+
+/** A reply (or a review, or one point of one) as Markdown: citations as
+ *  pills, references to the document as links into it, questions
+ *  underlined (unless turned off in Settings → Chat). */
+export function ReplyMarkdown({ content, sources }: { content: string; sources: Source[] }) {
   const md = useMemo(() => linkifyCitations(content), [content]);
   const underline = usePrefs((s) => s.underlineQuestions);
-  const prefill = useApp((s) => s.prefillComposer);
   return (
     <div className="msg-md">
       <Markdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={underline ? [rehypeQuestions] : []}
-        urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
+        urlTransform={keepScheme}
         components={{
-          a: ({ href, children }) =>
-            parseCiteHref(String(href ?? "")) ? (
-              <CitePill href={String(href)} sources={sources} />
-            ) : (
+          a: ({ href, children }) => {
+            const h = String(href ?? "");
+            if (parseCiteHref(h)) return <CitePill href={h} sources={sources} />;
+            const words = parseDocHref(h);
+            if (words) return <DocRef words={words}>{children}</DocRef>;
+            return (
               <a href={href} target="_blank" rel="noreferrer">
                 {children}
               </a>
-            ),
+            );
+          },
           table: ({ children }) => (
             <div className="md-table">
               <table>{children}</table>
             </div>
           ),
-          ...(review
-            ? {
-                li: ({ children, node }) => (
-                  <li>
-                    {children}
-                    <button
-                      className="take-up"
-                      title="Put this point in your reply, to edit and send"
-                      onClick={() => {
-                        const point = plain(nodeText(node)).replace(/\s+/g, " ").trim().slice(0, 400);
-                        prefill(`I'd like to take up this point from the review: “${point}”`);
-                      }}
-                    >
-                      Work on this
-                    </button>
-                  </li>
-                ),
-              }
-            : {}),
         }}
       >
         {md}
@@ -227,13 +225,11 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   const who = message.provider === "local" ? localLabel(message.model ?? "") : message.model ? modelLabel(message.model) : "";
-  const review = message.kind === "review";
   return (
-    <div className={`msg msg-guide${review ? " msg-review" : ""}`}>
-      {review && <div className="review-head">Review</div>}
-      <ReplyMarkdown content={message.content} sources={sources} review={review} />
+    <div className="msg msg-guide">
+      <ReplyMarkdown content={message.content} sources={sources} />
       <div className="msg-tools">
-        <span className="msg-model">{review ? `Reviewed by ${who}` : who}</span>
+        <span className="msg-model">{who}</span>
         <button title="Copy" onClick={() => copyText(plain(message.content))}>
           <CopyIcon size={13} />
         </button>
@@ -242,23 +238,24 @@ export const MessageBubble = memo(function MessageBubble({
   );
 });
 
-/** The reply (or review) as it streams in. */
-export function StreamingBubble({ text, status, sources, review }: { text: string; status: string; sources: Source[]; review?: boolean }) {
+export function Thinking({ status }: { status: string }) {
   return (
-    <div className={`msg msg-guide streaming${review ? " msg-review" : ""}`}>
-      {review && <div className="review-head">Review</div>}
-      {text ? (
-        <ReplyMarkdown content={text} sources={sources} />
-      ) : (
-        <div className="msg-status">
-          <span className="dots">
-            <i />
-            <i />
-            <i />
-          </span>
-          {status || "Thinking…"}
-        </div>
-      )}
+    <div className="msg-status">
+      <span className="dots">
+        <i />
+        <i />
+        <i />
+      </span>
+      {status || "Thinking…"}
+    </div>
+  );
+}
+
+/** The reply as it streams in. */
+export function StreamingBubble({ text, status, sources }: { text: string; status: string; sources: Source[] }) {
+  return (
+    <div className="msg msg-guide streaming">
+      {text ? <ReplyMarkdown content={text} sources={sources} /> : <Thinking status={status} />}
     </div>
   );
 }

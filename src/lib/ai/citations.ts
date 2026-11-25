@@ -17,6 +17,14 @@
 
 export const CITE_SCHEME = "nudge-cite:";
 
+/** A reference to words in the writer's own document, [[doc:the words]],
+ *  which scrolls the document to them (DocumentPane, editor/placement.ts). */
+export const DOC_SCHEME = "nudge-doc:";
+
+/** Quotation marks around the reference are its own to supply, so ones the
+ *  model put there as well are taken in. */
+const DOC_RE = /([“"‘]?)\[\[\s*doc\s*:\s*((?:[^\]]|\](?!\])){1,400}?)\s*\]\]([”"’]?)/gi;
+
 export interface Citation {
   /** 1-based index into the chat's works; null when the citation named
    *  only a page and the chat has more than one work to choose from. */
@@ -103,8 +111,23 @@ export function parseCiteHref(href: string): Citation | null {
   };
 }
 
+export function parseDocHref(href: string): string | null {
+  if (!href.startsWith(DOC_SCHEME)) return null;
+  try {
+    return decodeURIComponent(href.slice(DOC_SCHEME.length)) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Markdown's punctuation, escaped so the words show as they are. */
+function escapeMd(text: string): string {
+  return text.replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, "\\$&");
+}
+
 /** Rewrite every citation in a reply as a Markdown link the renderer
- *  turns into a pill. Fenced code is left alone — a citation inside a
+ *  turns into a pill, and every reference to the writer's document as a
+ *  link to those words. Fenced code is left alone — a citation inside a
  *  code block is being shown, not made. */
 export function linkifyCitations(markdown: string): string {
   // Split on fences, keeping them: even indices are prose, odd are code.
@@ -112,20 +135,30 @@ export function linkifyCitations(markdown: string): string {
   return parts
     .map((part, i) => {
       if (i % 2 === 1) return part;
-      return part.replace(CITE_RE, (whole, ...g) => {
-        const cite = fromMatch(g as Groups);
-        if (!Number.isFinite(cite.page) || cite.page <= 0) return whole;
-        // Brackets in the label would close the link early.
-        return `[${citationLabel(cite)}](${toHref(cite)})`;
-      });
+      return part
+        .replace(CITE_RE, (whole, ...g) => {
+          const cite = fromMatch(g as Groups);
+          if (!Number.isFinite(cite.page) || cite.page <= 0) return whole;
+          // Brackets in the label would close the link early.
+          return `[${citationLabel(cite)}](${toHref(cite)})`;
+        })
+        .replace(DOC_RE, (_whole, _open: string, words: string) => {
+          const w = words.trim();
+          return `[“${escapeMd(w)}”](${DOC_SCHEME}${encodeQuote(w)})`;
+        });
     })
     .join("");
+}
+
+/** References to the writer's document as plain quotations. */
+export function plainDocRefs(markdown: string): string {
+  return markdown.replace(DOC_RE, (_whole, _open: string, words: string) => `“${words.trim()}”`);
 }
 
 /** Strip citations back to readable prose, for the Markdown export —
  *  the private scheme means nothing outside this app. */
 export function plainCitations(markdown: string): string {
-  return markdown.replace(CITE_RE, (whole, ...g) => {
+  return plainDocRefs(markdown).replace(CITE_RE, (whole, ...g) => {
     const cite = fromMatch(g as Groups);
     if (!Number.isFinite(cite.page) || cite.page <= 0) return whole;
     const pages = cite.pageEnd

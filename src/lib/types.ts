@@ -95,14 +95,37 @@ export interface ChatMessage {
   content: string;
   ts: number;
   /** "kickoff": the message that opens a conversation (the goal), shown
-   *  as a card. "review": a review of the document (Review button), shown
-   *  as a card; it is the reviewer's, not the guide's, and the guide reads
-   *  it as something the writer shared (lib/ai/context.ts). */
+   *  as the goal card. "review": how reviews were kept before they had a
+   *  list of their own (NudgeDoc.reviews); moved there when the document
+   *  is opened. */
   kind?: "kickoff" | "review";
   provider?: Provider;
   model?: string;
   usage?: Usage;
   costUsd?: number;
+}
+
+/** A review of the document against its goal (the Review button), shown
+ *  in the bar under the goal. It is the reviewer's, not the guide's: the
+ *  guide reads it as something the writer shared, at the point in the
+ *  conversation it was made (lib/ai/context.ts). */
+export interface Review {
+  id: string;
+  ts: number;
+  content: string;
+  provider?: Provider;
+  model?: string;
+  usage?: Usage;
+  costUsd?: number;
+  /** Its points the writer has marked complete, by position in its list
+   *  (lib/ai/reviews.ts). */
+  done: number[];
+}
+
+/** The review point the writer is working on (Work on this). */
+export interface Working {
+  reviewId: string;
+  item: number;
 }
 
 export interface NudgeDoc {
@@ -116,6 +139,8 @@ export interface NudgeDoc {
   /** The writer's document, as Markdown. */
   content: string;
   messages: ChatMessage[];
+  reviews: Review[];
+  working: Working | null;
   sources: Source[];
   costUsd: number;
 }

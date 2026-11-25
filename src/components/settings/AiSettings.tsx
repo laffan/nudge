@@ -6,8 +6,8 @@
 // change here applies as it's made.
 import { useEffect, useState } from "react";
 import { localLabel } from "../../lib/ai/localModels";
-import { ONLINE_MODELS, formatUsd } from "../../lib/ai/models";
-import { resetUsage, usageByDay, type UsageDay } from "../../lib/ai/usage";
+import { ONLINE_MODELS, formatUsd, modelLabel } from "../../lib/ai/models";
+import { loadUsage, resetUsage, usageByDay, usageByModel, type UsageEvent } from "../../lib/ai/usage";
 import { choiceFor, patchSettings, providerLabel } from "../../lib/settings";
 import { useApp } from "../../lib/store";
 import { invoke } from "../../lib/tauri";
@@ -33,6 +33,7 @@ const USES: { id: UseId; label: string; note: string }[] = [
   { id: "chat", label: "Chat", note: "The guide's side of the conversation." },
   { id: "review", label: "Review", note: "Assesses the document against its goal (the document's Review button)." },
 ];
+const USE_NAMES = Object.fromEntries(USES.map((u) => [u.id, u.label])) as Record<UseId, string>;
 
 function ProviderBox({ p, onListed }: { p: Online; onListed: () => void }) {
   const keys = useApp((s) => s.keys);
@@ -171,16 +172,34 @@ function UseRow({ id, label, note, installed }: { id: UseId; label: string; note
 }
 
 function UsageTable() {
-  const [days, setDays] = useState<UsageDay[] | null>(null);
+  const [events, setEvents] = useState<UsageEvent[] | null>(null);
   const [armed, setArmed] = useState(false);
-  const load = () => void usageByDay().then(setDays).catch(() => setDays([]));
+  const load = () => void loadUsage().then(setEvents).catch(() => setEvents([]));
   useEffect(load, []);
+  const days = events ? usageByDay(events) : null;
+  const models = events ? usageByModel(events) : null;
   const total = (days ?? []).reduce(
     (t, d) => ({ requests: t.requests + d.requests, input: t.input + d.input, output: t.output + d.output, costUsd: t.costUsd + d.costUsd, unpriced: t.unpriced || d.unpriced }),
     { requests: 0, input: 0, output: 0, costUsd: 0, unpriced: false },
   );
   const fmt = (n: number) => n.toLocaleString();
   const cost = (n: number, unpriced: boolean) => `${unpriced ? "≥ " : ""}${formatUsd(n)}`;
+  const head = (first: string) => (
+    <thead>
+      <tr>
+        <th scope="col">{first}</th>
+        <th scope="col">Requests</th>
+        <th scope="col">Input</th>
+        <th scope="col">Output</th>
+        <th scope="col">Est. cost</th>
+      </tr>
+    </thead>
+  );
+  const none = events?.length === 0 && (
+    <tr>
+      <td colSpan={5}>No AI requests yet.</td>
+    </tr>
+  );
   return (
     <div className="ai-usage">
       <div className="ai-head">
@@ -201,25 +220,35 @@ function UsageTable() {
         </button>
       </div>
       <p className="hint">
-        Tokens used by Nudge's AI requests, by day, with an estimated cost from published prices. Your provider's billing
-        page is authoritative. On-device requests cost nothing.
+        Tokens used by Nudge's AI requests, by model and by day, with an estimated cost from published prices. Your
+        provider's billing page is authoritative. On-device requests cost nothing.
       </p>
+      <h4 className="usage-caption">By model</h4>
       <table className="usage-table">
-        <thead>
-          <tr>
-            <th scope="col">Date</th>
-            <th scope="col">Requests</th>
-            <th scope="col">Input</th>
-            <th scope="col">Output</th>
-            <th scope="col">Est. cost</th>
-          </tr>
-        </thead>
+        {head("Model")}
         <tbody>
-          {days?.length === 0 && (
-            <tr>
-              <td colSpan={5}>No AI requests yet.</td>
+          {none}
+          {models?.map((m) => (
+            <tr key={m.key}>
+              <td>
+                {m.provider === "local" ? localLabel(m.model) : modelLabel(m.model)}
+                <span className="usage-sub">
+                  {providerLabel(m.provider)} · {m.uses.map((u) => USE_NAMES[u]).join(", ")}
+                </span>
+              </td>
+              <td>{fmt(m.requests)}</td>
+              <td>{fmt(m.input)}</td>
+              <td>{fmt(m.output)}</td>
+              <td>{cost(m.costUsd, m.unpriced)}</td>
             </tr>
-          )}
+          ))}
+        </tbody>
+      </table>
+      <h4 className="usage-caption">By day</h4>
+      <table className="usage-table">
+        {head("Date")}
+        <tbody>
+          {none}
           {days?.map((d) => (
             <tr key={d.key}>
               <td>{d.label}</td>

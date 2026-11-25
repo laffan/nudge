@@ -17,8 +17,11 @@ conversation, including page citations that open the PDF at the cited passage.
   and delete. Settings is the gear at the bottom.
 - **Conversation** (middle). A new document opens on its goal screen. You say what
   the document is for and attach supporting PDFs, then press **Begin**. After that the
-  goal stays at the top (click it to edit), your sources appear under it as chips,
-  and the conversation runs below.
+  goal stays at the top (click it to edit), the review bar is attached under it once
+  the document has been reviewed, your sources appear as chips, and the conversation
+  runs below. Under the composer is what the document has cost with each service
+  (for example "OpenAI $0.0042 · Anthropic $0.0310"); hovering a service shows the
+  cost by model.
 - **Document** (right). Hush's editor. Your own messages in the conversation can be
   dragged into it by their grip (⠿). A text selection inside one of your messages can
   be dragged on its own. **Add to document** puts a message at the caret. Copy and
@@ -29,11 +32,22 @@ conversation, including page citations that open the PDF at the cited passage.
     and lights that sentence briefly. Pressing it also puts the caret there, ready
     for Add to document. For a message that's already in the document, it does
     nothing but say so in a small tip.
-  - **Review**, at the top of the document, has a separate reviewer assess the
-    document against its goal. The advice goes into the conversation, where you and
-    the guide can both see it. Each point has **Work on this**, which puts the point
-    in your reply for you to edit and send. Which points to take up is yours to
-    decide; the guide is told not to work through them unasked.
+  - **Review**, the last button at the top of the document, has a separate reviewer
+    assess the document against its goal. The advice appears in the review bar under
+    the goal; the guide sees it too. Which points to take up is yours to decide, and
+    the guide is told not to work through them unasked.
+    - The bar shows the latest review and folds to a single line. **Earlier** lists
+      the previous reviews with their times, to read again.
+    - **Work on this** on a point narrows the bar to that point alone, and the guide
+      is told you're working on it. The point folds to a single line of its own
+      ("Working on: Evidence"). **Item complete** greys the point out in the review;
+      **Stop working** leaves it as it was. Either way the bar goes back to the
+      whole review.
+    - A new review takes over from the last, and a point you were working on is put
+      down.
+  - **Quoted words of your document**, in a review or a reply, are links: pressing
+    one scrolls the document to those words and lights them. If you've changed the
+    words since, it says so.
 - **Source viewer** (optional, left of the conversation). Opens when you press a
   source chip or a citation such as **p. 4**. It goes to the cited page and marks the
   quoted passage. Your Zotero highlights are drawn on the pages.
@@ -53,7 +67,8 @@ Settings → AI follows Snorkle's layout:
 - **Uses.** Each use of AI has its own service and model:
   - **Chat**, the guide's side of the conversation;
   - **Review**, the document's Review button.
-- **Usage.** Tokens and estimated cost, by day.
+- **Usage.** Tokens and estimated cost by model (with its service, and whether it
+  served Chat or Review) and by day. Amounts under a cent show to four places.
 
 The services are:
 

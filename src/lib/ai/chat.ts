@@ -1,7 +1,7 @@
 // Running the conversation: beginning it from the goal, sending the
 // writer's messages, streaming the guide's replies into the store, and
 // stopping one midway — and the document's Review, which streams a
-// reviewer's assessment into the conversation the same way. Each takes the
+// reviewer's assessment into the review bar under the goal the same way. Each takes the
 // service and model its use is set to (Settings → AI → Uses). When an
 // online service can't be reached and an on-device model is installed, the
 // request is answered on the device instead (Settings → AI, "Without a
@@ -10,7 +10,7 @@ import { newId, updateCurrent } from "../documents";
 import { modelOf, choiceFor } from "../settings";
 import { invoke, invokeStreaming } from "../tauri";
 import { toast, useApp, type Streaming } from "../store";
-import type { ChatMessage, NudgeDoc, Provider, Settings, StreamEvent, Usage, UseId } from "../types";
+import type { ChatMessage, NudgeDoc, Provider, Review, Settings, StreamEvent, Usage, UseId } from "../types";
 import { buildLocal, buildOnline, buildReview, type Built } from "./context";
 import { localOptionsFor } from "./localModels";
 import { usageCost } from "./models";
@@ -50,12 +50,12 @@ export async function retryLast(): Promise<void> {
   const doc = useApp.getState().current;
   if (!doc || useApp.getState().streaming) return;
   const last = doc.messages[doc.messages.length - 1];
-  if (last?.role === "assistant" && last.kind !== "review") updateCurrent((d) => ({ ...d, messages: d.messages.slice(0, -1) }));
+  if (last?.role === "assistant") updateCurrent((d) => ({ ...d, messages: d.messages.slice(0, -1) }));
   await run("chat");
 }
 
-/** Review the document against the goal; the review goes into the
- *  conversation, where the writer decides what to take up. */
+/** Review the document against the goal; the review goes into the bar
+ *  under the goal, where the writer decides what to take up. */
 export async function reviewDocument(): Promise<void> {
   const doc = useApp.getState().current;
   if (!doc || useApp.getState().streaming) return;
@@ -166,27 +166,28 @@ async function stream(doc: NudgeDoc, settings: Settings, use: UseId, provider: P
     if (stop === "stopped") return;
     throw new Error("The model returned an empty reply");
   }
-  const reply: ChatMessage = {
-    id: newId("msg"),
-    role: "assistant",
-    ...(use === "review" ? { kind: "review" as const } : {}),
-    content: stop === "stopped" ? `${text.trim()} …` : text.trim(),
-    ts: Date.now(),
-    provider,
-    model: servedBy,
-    usage,
-    costUsd,
-  };
+  const content = stop === "stopped" ? `${text.trim()} …` : text.trim();
+  const ts = Date.now();
+  // A new review takes over from the last: a point of the old one that was
+  // being worked on is put down.
+  const add: (d: NudgeDoc) => NudgeDoc =
+    use === "review"
+      ? (d) => {
+          const review: Review = { id: newId("rev"), ts, content, provider, model: servedBy, usage, costUsd, done: [] };
+          return { ...d, reviews: [...(d.reviews ?? []), review], working: null, costUsd: d.costUsd + costUsd };
+        }
+      : (d) => {
+          const reply: ChatMessage = { id: newId("msg"), role: "assistant", content, ts, provider, model: servedBy, usage, costUsd };
+          return { ...d, messages: [...d.messages, reply], costUsd: d.costUsd + costUsd };
+        };
   // The reply belongs to the document it was asked in, even if another
   // is open by the time it arrives.
   if (useApp.getState().current?.id === doc.id) {
-    updateCurrent((d) => ({ ...d, messages: [...d.messages, reply], costUsd: d.costUsd + costUsd }));
+    updateCurrent(add);
   } else {
     try {
       const saved = await invoke<NudgeDoc>("load_document", { id: doc.id });
-      await invoke("save_document", {
-        doc: { ...saved, messages: [...saved.messages, reply], costUsd: saved.costUsd + costUsd, updatedMs: Date.now() },
-      });
+      await invoke("save_document", { doc: { ...add(saved), updatedMs: Date.now() } });
     } catch {
       // the document was deleted meanwhile
     }

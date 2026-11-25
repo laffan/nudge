@@ -1,14 +1,16 @@
 // The document column: the writer's text in Hush's editor, under its
-// title, with the word count and the ways out (copy as Markdown, export a
-// .md file). The editor is made afresh for each document, so undo never
-// reaches into another one.
+// title, with the word count, the ways out (copy as Markdown, export a .md
+// file) and, last, Review. The editor is made afresh for each document, so
+// undo never reaches into another one. It answers the conversation's
+// requests: Add to document, Suggest placement, and the words a reply or
+// review points to ([[doc:…]]).
 import { useEffect, useRef, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { countWords, createEditor, exportMarkdown, insertSnippet, type EditorHandles } from "../editor/editor";
 import { updateCurrent } from "../lib/documents";
 import { toast, useApp, usePrefs } from "../lib/store";
 import { invoke, isTauri } from "../lib/tauri";
-import { findPlacement, showPlacement } from "../editor/placement";
+import { findInDocument, findPlacement, showPlacement } from "../editor/placement";
 import { reviewDocument } from "../lib/ai/chat";
 import { readyFor } from "../lib/settings";
 import { copyText } from "./chat/MessageBubble";
@@ -45,6 +47,7 @@ export function DocumentPane() {
   const content = useApp((s) => s.current?.content ?? "");
   const insertRequest = useApp((s) => s.insertRequest);
   const placementRequest = useApp((s) => s.placementRequest);
+  const docFocusRequest = useApp((s) => s.docFocusRequest);
   const goal = useApp((s) => s.current?.goal ?? "");
   const busy = useApp((s) => Boolean(s.streaming));
   const prefs = usePrefs();
@@ -103,6 +106,19 @@ export function DocumentPane() {
     if (placementRequest.mode === "place") focusedOnce.current = true;
   }, [placementRequest]);
 
+  // A [[doc:…]] reference pressed in a reply or a review: scroll to those
+  // words and light them.
+  useEffect(() => {
+    const ed = editor.current;
+    if (!docFocusRequest || !ed) return;
+    const found = findInDocument(ed.view.state.doc.toString(), docFocusRequest.text);
+    if (!found) {
+      toast("Those words aren't in the document any more");
+      return;
+    }
+    showPlacement(ed.view, { ...found, insertAt: found.to }, false);
+  }, [docFocusRequest]);
+
   const review = () => {
     const app = useApp.getState();
     const ready = readyFor(app.settings, app.keys, "review");
@@ -147,6 +163,12 @@ export function DocumentPane() {
         />
         <div className="doc-head-tools">
           {prefs.showWordCount && <span className="word-count">{words.toLocaleString()} words</span>}
+          <button className="icon-btn" title="Copy as Markdown" onClick={() => { copyText(exportMarkdown(content)); toast("Copied as Markdown"); }}>
+            <CopyIcon size={15} />
+          </button>
+          <button className="icon-btn" title="Export as a Markdown file" onClick={() => void exportFile(title, content)}>
+            <ExportIcon size={15} />
+          </button>
           <button
             className="btn small review-btn"
             disabled={busy || !content.trim() || !goal.trim()}
@@ -155,17 +177,11 @@ export function DocumentPane() {
                 ? "Set the document's goal first"
                 : !content.trim()
                   ? "Write something to review first"
-                  : "Assess the document against its goal; the advice goes into the conversation"
+                  : "Assess the document against its goal; the advice appears under the goal"
             }
             onClick={review}
           >
             <ReviewIcon size={14} /> Review
-          </button>
-          <button className="icon-btn" title="Copy as Markdown" onClick={() => { copyText(exportMarkdown(content)); toast("Copied as Markdown"); }}>
-            <CopyIcon size={15} />
-          </button>
-          <button className="icon-btn" title="Export as a Markdown file" onClick={() => void exportFile(title, content)}>
-            <ExportIcon size={15} />
           </button>
         </div>
       </header>

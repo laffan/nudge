@@ -143,25 +143,35 @@ const SCRIPT = [
   "Good — that example could open the piece. Try dragging your last answer into the document and we'll build from it. What's the claim you want that example to support?",
 ];
 
-const REVIEW_SCRIPT = `The draft names its reader clearly, but the claim it wants that reader to accept isn't stated yet, and nothing yet shows peer review at work in a class.
+/** The scripted review, quoting the draft's own opening and closing words
+ *  as document references, as the reviewer is asked to. */
+function reviewScript(draft: string): string {
+  const sentences = draft.split(/(?<=[.!?])\s+|\n+/).map((s) => s.trim()).filter((s) => s.split(/\s+/).length >= 3);
+  const words = (s: string | undefined) => (s ? s.split(/\s+/).slice(0, 7).join(" ").replace(/[.,;:!?]+$/, "") : "");
+  const first = words(sentences[0]);
+  const last = words(sentences[sentences.length - 1]);
+  const at = (w: string) => (w ? ` — [[doc:${w}]]` : "");
+  return `The draft names its reader clearly, but the claim it wants that reader to accept isn't stated yet, and nothing yet shows peer review at work in a class.
 
-1. **The opening** — “It is for the hiring committee…” says who the piece is for, not what it argues. Consider what you want the committee to believe after reading.
+1. **The opening**${at(first)} says who the piece is for, not what it argues. Consider what you want the reader to believe after reading.
 2. **Evidence** — the goal promises a reflection on practice; the draft has no moment from a seminar. A single concrete episode would carry more than a general statement.
-3. **What's working** — “read their own drafts as outsiders would” is a clear, memorable idea worth keeping as the spine of the piece.
-4. **Length** — at this point the draft is far short of 1,500 words; the sections the goal implies (method, an example, what you've learned) are still to come.`;
+3. **What's working**${at(last)} is a clear idea worth keeping as the spine of the piece.
+4. **Length** — at this point the draft is far short of what the goal implies; the sections it calls for (method, an example, what you've learned) are still to come.`;
+}
 
 export async function browserStream(cmd: string, args: Record<string, unknown>, onEvent: (e: unknown) => void): Promise<void> {
   if (cmd !== "ai_chat") throw new Error(`“${cmd}” is only available in the app`);
   stopped = false;
-  const req = args.request as { system: string; messages: { role: string }[] };
+  const req = args.request as { model: string; system: string; messages: { role: string; content: string }[] };
   const turn = req.messages.filter((m) => m.role === "assistant").length;
   // With a source attached, point at a real sentence of it, as a model would.
   const m = /\[\[page (\d+)\]\]\n([^\n]{20,})/.exec(req.system);
   const quote = m ? m[2].split(/\s+/).slice(0, 9).join(" ") : "";
   const cite = quote ? ` Your first source puts it this way: [[cite:1:${m![1]}:${quote}]] — does that match your experience?` : "";
   const reviewing = req.system.startsWith("You review");
+  const draft = /<document>\n([\s\S]*?)\n<\/document>/.exec(req.messages[req.messages.length - 1]?.content ?? "")?.[1] ?? "";
   const text = reviewing
-    ? `${REVIEW_SCRIPT}\n\n_(This is a scripted review: the browser preview has no model.)_`
+    ? `${reviewScript(draft)}\n\n_(This is a scripted review: the browser preview has no model.)_`
     : `${SCRIPT[turn % SCRIPT.length]}${turn === 0 ? cite : ""}\n\n_(This is a scripted reply: the browser preview has no model.)_`;
   const send = (e: StreamEvent) => onEvent(e);
   send({ type: "status", message: "Thinking…" });
@@ -174,7 +184,8 @@ export async function browserStream(cmd: string, args: Record<string, unknown>, 
   send({
     type: "done",
     usage: { inputTokens: 1200, outputTokens: text.length >> 2, cachedInputTokens: 0, cacheWriteTokens: 0 },
-    model: "preview",
+    // As the app would: the model asked for, so its cost can be estimated.
+    model: req.model || "preview",
     stop: stopped ? "stopped" : "end_turn",
   });
 }

@@ -88,6 +88,51 @@ export function isInDocument(doc: string, text: string): boolean {
   return parts.length > 0 && parts.every((s) => d.includes(s));
 }
 
+/** `s` in plainForm's terms, with where each of its characters came from,
+ *  so a match in it can be found again in `s`. */
+function mapped(s: string): { text: string; at: number[] } {
+  let text = "";
+  const at: number[] = [];
+  for (let i = 0; i < s.length; i++) {
+    let c = s[i];
+    if (c === "*" || c === "_") continue;
+    if ((c === "=" || c === "~") && (s[i + 1] === c || s[i - 1] === c)) continue;
+    if (/\s/.test(c)) {
+      if (text.endsWith(" ") || text === "") continue;
+      c = " ";
+    } else if (c === "‘" || c === "’") c = "'";
+    else if (c === "“" || c === "”") c = '"';
+    else if (c === "–" || c === "—") c = "-";
+    else {
+      const low = c.toLowerCase();
+      if (low.length === 1) c = low;
+    }
+    text += c;
+    at.push(i);
+  }
+  return { text, at };
+}
+
+/** Where `words` the guide or the reviewer quoted ([[doc:…]]) are in the
+ *  document. Case, kinds of quote and dash, emphasis and spacing don't
+ *  count, nor an ellipsis the quote trails off with. If the words as a
+ *  whole aren't there (the writer has changed them since), their opening
+ *  words, then their closing words, will do. */
+export function findInDocument(doc: string, words: string): { from: number; to: number } | null {
+  const hay = mapped(doc);
+  const needle = mapped(words.trim()).text.replace(/^["']+|["']+$/g, "").replace(/\s*(?:…|\.\.\.)$/, "").trim();
+  if (!needle || !hay.text) return null;
+  const find = (n: string) => {
+    const i = hay.text.indexOf(n);
+    return i < 0 ? null : { from: hay.at[i], to: hay.at[i + n.length - 1] + 1 };
+  };
+  const whole = find(needle);
+  if (whole) return whole;
+  const list = needle.split(" ");
+  if (list.length < 6) return null;
+  return find(list.slice(0, 5).join(" ")) ?? find(list.slice(-5).join(" "));
+}
+
 export function findPlacement(doc: string, text: string): Placement | null {
   const list = sentences(doc);
   if (list.length === 0) return null;
