@@ -30,7 +30,8 @@
     "targets": "all",
     "category": "Productivity",
     "iOS": {
-      "minimumSystemVersion": "18.0"
+      "minimumSystemVersion": "18.0",
+      "frameworks": ["Accelerate", "Foundation"]
     },
     "macOS": {
       "minimumSystemVersion": "13.0"

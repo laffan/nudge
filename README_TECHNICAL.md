@@ -197,11 +197,26 @@ scripted. With a source attached, the scripted guide cites a real sentence of it
 citations and the viewer can be exercised. Zotero, model lists and downloads say they
 need the app.
 
+## iOS linking
+
+On iOS, Rust is built as a static library (`libapp.a`) that Xcode links into the
+app. Link requests that build scripts make with `cargo:rustc-link-lib=framework=…`
+don't travel inside a static library. `llama-cpp-sys-2` asks for Foundation, Metal,
+MetalKit and Accelerate in that way, so the Xcode project has to link them itself:
+
+- Tauri's project template already links Metal and MetalKit.
+- `bundle.iOS.frameworks` in `tauri.conf.json` adds Accelerate (ggml's `vDSP_*`
+  calls) and Foundation.
+- `scripts/ios-entitlements.mjs` merges `src-tauri/ios/Nudge.entitlements` into the
+  generated project. Tauri's config has no entitlements option.
+
+Both take effect when the project is generated (`npm run ios:init`), not on later
+builds.
+
 ## Not yet done / known limits
 
-- The iOS build of llama.cpp (Metal) has not been tried on a device from this
-  repository. If it fails, `--no-default-features` builds without the on-device
-  engine.
+- The iOS build of llama.cpp (Metal) has not yet run on a device. If it can't be
+  made to link, `--no-default-features` builds without the on-device engine.
 - Exporting to a file uses the save dialog on macOS. On iPad the document is copied
   to the clipboard as Markdown instead.
 - Downloaded models live in the app's data folder, which iOS includes in device

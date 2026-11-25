@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "tauri": "tauri",
-    "ios:init": "tauri ios init",
+    "ios:init": "tauri ios init && node scripts/ios-entitlements.mjs",
+    "ios:entitlements": "node scripts/ios-entitlements.mjs",
     "ios:dev": "tauri ios dev",
     "ios:build": "tauri ios build"
   },

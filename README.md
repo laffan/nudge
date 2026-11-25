@@ -84,13 +84,26 @@ npm run tauri build -- -- --no-default-features
 One-time setup (macOS and Xcode):
 
 ```sh
-npm run tauri ios init     # generates src-tauri/gen/apple
+npm run ios:init           # tauri ios init (generates src-tauri/gen/apple), then adds the entitlements
 ```
 
-1. Open the generated Xcode project and set your signing team.
-2. Add the **Increased Memory Limit** capability to the app target. Its entitlements
-   are listed in `src-tauri/ios/Nudge.entitlements`. Without it, iPadOS stops the app
-   when an on-device model of about 2.7 GB is loaded on an 8 GB iPad.
+Then open the generated Xcode project and set your signing team, or set the
+`APPLE_DEVELOPMENT_TEAM` environment variable.
+
+`npm run ios:init` does two things beyond `tauri ios init`:
+
+- **Links Apple's Accelerate and Foundation frameworks.** llama.cpp needs them on
+  iOS, and they are listed in `bundle.iOS.frameworks` in `tauri.conf.json`. Rust is
+  built as a static library that Xcode links, so the framework requests from
+  llama.cpp's own build script don't reach Xcode. Without Accelerate the link fails
+  with `"_vDSP_…", referenced from: ggml_compute_forward_…`. Tauri applies this
+  setting only when it creates the project. If `src-tauri/gen/apple` predates it,
+  delete that folder and run `npm run ios:init` again.
+- **Adds the increased-memory-limit entitlements** from
+  `src-tauri/ios/Nudge.entitlements` to the generated project. Without them, iPadOS
+  stops the app when an on-device model of about 2.7 GB is loaded on an 8 GB iPad.
+  If signing rejects them, add **Increased Memory Limit** (and **Extended Virtual
+  Addressing**) under the target's Signing & Capabilities.
 
 Day-to-day:
 
