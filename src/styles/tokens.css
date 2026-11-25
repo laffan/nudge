@@ -1,0 +1,74 @@
+/* Colours and type, for both appearances. Light is paper; dark is Hush's. */
+:root {
+  --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #fbf9f6;
+  --bg-chat: #f4f1eb;
+  --bg-sidebar: #ece8e0;
+  --bg-raised: #ffffff;
+  --bg-hover: rgba(120, 110, 95, 0.1);
+  --bg-active: rgba(120, 110, 95, 0.17);
+  --fg: #2b2a28;
+  --fg-soft: #57534c;
+  --muted: #8d877d;
+  --border: #e2ddd3;
+  --border-strong: #cfc8bb;
+  --accent: #c8553d;
+  --accent-soft: rgba(200, 85, 61, 0.12);
+  --accent-fg: #ffffff;
+  --link: #3a679c;
+  --danger: #c0392b;
+  --doc-highlight: rgba(255, 212, 0, 0.38);
+  --cite-mark: rgba(255, 46, 147, 0.32);
+  --user-bubble: #ffffff;
+  --shadow: 0 8px 30px rgba(40, 30, 20, 0.14), 0 1px 3px rgba(40, 30, 20, 0.08);
+  --selection: rgba(58, 103, 156, 0.22);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a1a;
+    --bg-chat: #1f1f1f;
+    --bg-sidebar: #151515;
+    --bg-raised: #262626;
+    --bg-hover: rgba(255, 255, 255, 0.06);
+    --bg-active: rgba(255, 255, 255, 0.1);
+    --fg: #e0e0e0;
+    --fg-soft: #b8b8b8;
+    --muted: #888888;
+    --border: #2d2d2d;
+    --border-strong: #3d3d3d;
+    --accent: #e0765f;
+    --accent-soft: rgba(224, 118, 95, 0.16);
+    --accent-fg: #1a1a1a;
+    --link: #8fb5e3;
+    --doc-highlight: rgba(255, 212, 0, 0.25);
+    --user-bubble: #262626;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    --selection: rgba(143, 181, 227, 0.25);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --bg-chat: #1f1f1f;
+  --bg-sidebar: #151515;
+  --bg-raised: #262626;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.1);
+  --fg: #e0e0e0;
+  --fg-soft: #b8b8b8;
+  --muted: #888888;
+  --border: #2d2d2d;
+  --border-strong: #3d3d3d;
+  --accent: #e0765f;
+  --accent-soft: rgba(224, 118, 95, 0.16);
+  --accent-fg: #1a1a1a;
+  --link: #8fb5e3;
+  --doc-highlight: rgba(255, 212, 0, 0.25);
+  --user-bubble: #262626;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --selection: rgba(143, 181, 227, 0.25);
+  color-scheme: dark;
+}

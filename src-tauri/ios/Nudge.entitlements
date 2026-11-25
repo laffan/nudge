@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Lets the app use more of the iPad's memory than the default
+       per-app limit: an on-device model of ~2.7 GB needs it on an 8 GB
+       M1 iPad. Merge these keys into the generated Xcode target's
+       entitlements (see README, "iPad"). -->
+  <key>com.apple.developer.kernel.increased-memory-limit</key>
+  <true/>
+  <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+  <true/>
+</dict>
+</plist>

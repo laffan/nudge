@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Merged by the Tauri CLI into the generated iOS Info.plist.
+       Pointer and trackpad events arrive natively (Magic Keyboard). -->
+  <key>UIApplicationSupportsIndirectInputEvents</key>
+  <true/>
+  <!-- Opening a PDF from Files: the picker hands over a copy. -->
+  <key>UISupportsDocumentBrowser</key>
+  <false/>
+  <key>LSSupportsOpeningDocumentsInPlace</key>
+  <false/>
+</dict>
+</plist>

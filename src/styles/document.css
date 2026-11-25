@@ -1,0 +1,24 @@
+/* The document column: Hush's editor. */
+.document { height: 100%; display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+.doc-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px 6px 24px; }
+.ipados .doc-head { padding-top: 14px; }
+.doc-title-input { flex: 1; min-width: 0; border: none; outline: none; background: none; font-family: var(--doc-font); font-size: 20px; font-weight: 700; color: var(--fg); padding: 4px 0; }
+.doc-title-input::placeholder { color: var(--muted); }
+.doc-head-tools { display: flex; align-items: center; gap: 2px; flex: none; }
+.word-count { font-size: 12px; color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.doc-editor { flex: 1; min-height: 0; display: flex; }
+.doc-editor .cm-editor { flex: 1; height: 100%; background: transparent; }
+.doc-editor .cm-editor.cm-focused { outline: none; }
+.doc-editor .cm-scroller { font-family: var(--doc-font); font-size: var(--doc-font-size); line-height: var(--doc-line-height); padding: 8px 0 30vh; }
+.doc-editor .cm-content { max-width: var(--doc-column); margin: 0 auto; padding: 12px 32px; caret-color: var(--accent); }
+.doc-editor .cm-line { padding: 0; }
+.doc-editor .cm-cursor { border-left: 2px solid var(--accent); }
+.doc-editor .cm-selectionBackground, .doc-editor .cm-focused .cm-selectionBackground { background: var(--selection) !important; }
+.doc-editor .cm-placeholder { color: var(--muted); font-style: italic; }
+.doc-editor .cm-dropCursor { border-left: 2px solid var(--accent); }
+.cm-unfocused { opacity: 0.3; transition: opacity 0.3s; }
+.cm-typewriter .cm-scroller { padding-top: 40vh; padding-bottom: 50vh; }
+.doc-editor .cm-panels { background: var(--bg-chat); color: var(--fg); border-color: var(--border); font-family: var(--ui-font); font-size: 13px; }
+.doc-editor .cm-panels input, .doc-editor .cm-panels button { font-size: 13px; }
+.doc-editor .cm-searchMatch { background: var(--doc-highlight); }
+.doc-editor .cm-instance-highlight, .doc-editor .cm-selectionMatch { background: var(--accent-soft); }

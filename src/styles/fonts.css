@@ -1,0 +1,10 @@
+/* iA Writer Quattro, Hush's default writing face (SIL Open Font License
+   1.1 — see src/assets/fonts/ia-writer-quattro/LICENSE.md). */
+@font-face { font-family: "iA Writer Quattro"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../assets/fonts/ia-writer-quattro/iAWriterQuattroS-Regular.woff2") format("woff2"); }
+@font-face { font-family: "iA Writer Quattro"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../assets/fonts/ia-writer-quattro/iAWriterQuattroS-Italic.woff2") format("woff2"); }
+@font-face { font-family: "iA Writer Quattro"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../assets/fonts/ia-writer-quattro/iAWriterQuattroS-Bold.woff2") format("woff2"); }
+@font-face { font-family: "iA Writer Quattro"; font-style: italic; font-weight: 700; font-display: swap;
+  src: url("../assets/fonts/ia-writer-quattro/iAWriterQuattroS-BoldItalic.woff2") format("woff2"); }

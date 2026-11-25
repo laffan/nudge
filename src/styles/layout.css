@@ -1,0 +1,32 @@
+.app { display: flex; height: 100%; width: 100%; }
+.sidebar-wrap { flex: none; height: 100%; }
+.sidebar-scrim { display: none; }
+.main { flex: 1; min-width: 0; height: 100%; position: relative; display: flex; }
+.columns { flex: 1; display: flex; min-width: 0; height: 100%; }
+.col-viewer { flex: 0 1 auto; height: 100%; min-width: 260px; max-width: 45%; display: flex; }
+.col-viewer > * { flex: 1; min-width: 0; }
+.split { flex: 1; min-width: 0; display: flex; height: 100%; }
+.col-chat { flex: 0 1 auto; min-width: 300px; height: 100%; display: flex; }
+.col-doc { flex: 1 1 0; min-width: 300px; height: 100%; display: flex; }
+.col-chat > *, .col-doc > * { flex: 1; min-width: 0; }
+
+.resizer { flex: none; width: 1px; background: var(--border); position: relative; cursor: col-resize; z-index: 5; touch-action: none; }
+.resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: -5px; right: -5px; }
+.resizer:hover, .resizer:active { background: var(--accent); }
+
+.sidebar-reopen { position: absolute; top: 10px; left: 10px; z-index: 20; }
+.ipados .sidebar-reopen { top: 14px; }
+
+.welcome { margin: auto; max-width: 440px; text-align: center; padding: 24px; }
+.welcome h1 { font-family: "iA Writer Quattro", Georgia, serif; font-size: 40px; margin: 0 0 12px; letter-spacing: -0.01em; }
+.welcome p { color: var(--fg-soft); line-height: 1.55; margin: 0 0 22px; font-size: 15px; }
+
+/* Narrow windows (an iPad upright, a half-screen Mac window): the list
+   floats over the columns instead of taking a share of them. */
+@media (max-width: 1000px) {
+  .sidebar-wrap { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; box-shadow: var(--shadow); }
+  .app > .resizer { display: none; }
+  .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.15); }
+  .col-chat { min-width: 260px; }
+  .col-doc { min-width: 260px; }
+}

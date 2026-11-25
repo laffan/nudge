@@ -1,0 +1,33 @@
+/* The source viewer column. */
+.viewer { height: 100%; display: flex; flex-direction: column; background: var(--bg-sidebar); min-width: 0; }
+.viewer-head { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); }
+.ipados .viewer-head { padding-top: 12px; }
+.viewer-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.viewer-tools { display: flex; align-items: center; gap: 1px; flex: none; }
+.viewer-page { font-size: 12px; color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.zoom-label { font-size: 11px; font-variant-numeric: tabular-nums; }
+.viewer-scroll { flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch; }
+.viewer-loading, .viewer-error { padding: 24px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.viewer-error { color: var(--danger); }
+.pdf-page { position: absolute; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); overflow: hidden; }
+.pdf-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pdf-marks { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.pdf-annot { position: absolute; background: var(--annot); opacity: 0.38; mix-blend-mode: multiply; border-radius: 1px; pointer-events: auto; }
+.pdf-annot.underline { background: none; border-bottom: 2px solid var(--annot); opacity: 0.9; mix-blend-mode: normal; }
+.pdf-cite-mark { position: absolute; background: var(--cite-mark); border-radius: 2px; mix-blend-mode: multiply; animation: cite-in 0.9s ease-out; }
+@keyframes cite-in { from { box-shadow: 0 0 0 6px var(--cite-mark); } to { box-shadow: 0 0 0 0 transparent; } }
+
+/* pdf.js text layer, so passages can be selected and copied (as Zotero
+   Helper sets it up for pdf.js 5–6). */
+.textLayer { color-scheme: only light; position: absolute; text-align: initial; inset: 0; overflow: clip; opacity: 1; line-height: 1; z-index: 1;
+  -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText;
+  --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
+.textLayer span, .textLayer br { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; -webkit-user-select: text; user-select: text; }
+.textLayer > :not(.markedContent), .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height)); --scale-x: 1; --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.textLayer .markedContent { display: contents; }
+.textLayer ::selection { background: rgb(0 90 255 / 0.25); color: transparent; }
+.textLayer br::selection { background: transparent; }
+.textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
+.textLayer.selecting .endOfContent { top: 0; }
