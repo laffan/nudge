@@ -26,6 +26,9 @@ function reviewer(r: Review): string {
   return r.model ? modelLabel(r.model) : "";
 }
 
+/** Said of a review made without the attached PDFs (the Review menu). */
+const WITHOUT = "without the attached PDFs";
+
 function setDone(reviewId: string, item: number, done: boolean): void {
   updateCurrent((d) => ({
     ...d,
@@ -108,6 +111,7 @@ function EarlierReviews({ reviews, sources }: { reviews: Review[]; sources: Sour
               <span className="review-when">{reviewWhen(r.ts)}</span>
               <span className="review-meta">
                 {reviewer(r)}
+                {r.withSources === false && ` · ${WITHOUT}`}
                 {total > 0 && r.done.length > 0 && ` · ${r.done.length} of ${total} complete`}
               </span>
             </Toggle>
@@ -246,7 +250,10 @@ export function ReviewBar({ doc, sources }: { doc: NudgeDoc; sources: Source[] }
             <>
               <ReviewContent review={latest} sources={sources} workable />
               <div className="review-foot">
-                <span>Reviewed by {reviewer(latest)}</span>
+                <span>
+                  Reviewed by {reviewer(latest)}
+                  {latest.withSources === false && `, ${WITHOUT}`}
+                </span>
                 <button className="icon-btn" title="Copy the review" onClick={() => copyText(plain(latest.content))}>
                   <CopyIcon size={13} />
                 </button>

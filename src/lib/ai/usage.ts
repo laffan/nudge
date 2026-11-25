@@ -19,15 +19,22 @@ export interface UsageEvent {
   priced: boolean;
 }
 
-export interface UsageDay {
-  key: string;
-  label: string;
+export interface UsageTotals {
   requests: number;
   input: number;
   output: number;
   costUsd: number;
   unpriced: boolean;
 }
+
+/** A day's usage, a row per service (whose key it went on). */
+export interface UsageDay {
+  key: string;
+  label: string;
+  services: (UsageTotals & { provider: Provider })[];
+}
+
+const SERVICE_ORDER: Provider[] = ["anthropic", "openai", "local"];
 
 export function logUsage(use: UseId, provider: Provider, model: string, u: Usage, costUsd: number): void {
   const event: UsageEvent = {
@@ -110,19 +117,21 @@ export function usageByDay(events: UsageEvent[]): UsageDay[] {
     const day = days.get(key) ?? {
       key,
       label: d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" }),
-      requests: 0,
-      input: 0,
-      output: 0,
-      costUsd: 0,
-      unpriced: false,
+      services: [],
     };
-    day.requests += 1;
-    day.input += e.input;
-    day.output += e.output;
-    day.costUsd += e.costUsd;
-    day.unpriced ||= !e.priced;
+    let row = day.services.find((s) => s.provider === e.provider);
+    if (!row) {
+      row = { provider: e.provider, requests: 0, input: 0, output: 0, costUsd: 0, unpriced: false };
+      day.services.push(row);
+    }
+    row.requests += 1;
+    row.input += e.input;
+    row.output += e.output;
+    row.costUsd += e.costUsd;
+    row.unpriced ||= !e.priced;
     days.set(key, day);
   }
+  for (const day of days.values()) day.services.sort((a, b) => SERVICE_ORDER.indexOf(a.provider) - SERVICE_ORDER.indexOf(b.provider));
   return [...days.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
 }
 

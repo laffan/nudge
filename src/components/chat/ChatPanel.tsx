@@ -182,6 +182,30 @@ function CostFoot({ doc, chat }: { doc: NudgeDoc; chat: Provider | null }) {
   );
 }
 
+/** Words selected inside one of the writer's messages, and which message:
+ *  its Add button then adds just those ("Add selection to document"). */
+function useMessageSelection(): { id: string; text: string } | null {
+  const [sel, setSel] = useState<{ id: string; text: string } | null>(null);
+  useEffect(() => {
+    const textOf = (n: Node | null) => (n instanceof Element ? n : n?.parentElement)?.closest<HTMLElement>(".msg-user .msg-text") ?? null;
+    const onChange = () => {
+      const s = window.getSelection();
+      let next: { id: string; text: string } | null = null;
+      if (s && !s.isCollapsed) {
+        const at = textOf(s.anchorNode);
+        const id = at?.closest<HTMLElement>("[data-msg]")?.dataset.msg;
+        const text = s.toString().trim();
+        // Within one message only.
+        if (at && at === textOf(s.focusNode) && id && text) next = { id, text };
+      }
+      setSel((prev) => (prev?.id === next?.id && prev?.text === next?.text ? prev : next));
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => document.removeEventListener("selectionchange", onChange);
+  }, []);
+  return sel;
+}
+
 export function ChatPanel() {
   const doc = useApp((s) => s.current);
   const messages = useApp((s) => s.current?.messages);
@@ -191,6 +215,7 @@ export function ChatPanel() {
   const insert = useApp((s) => s.insertIntoDocument);
   const chatUse = useApp((s) => (s.settings ? choiceFor(s.settings, "chat").provider : null));
   const fontSize = usePrefs((s) => s.chatFontSize);
+  const selected = useMessageSelection();
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
 
@@ -232,7 +257,9 @@ export function ChatPanel() {
         }}
       >
         {messages.map((m) =>
-          m.kind === "kickoff" ? null : <MessageBubble key={m.id} message={m} sources={sources} onInsert={insert} />,
+          m.kind === "kickoff" ? null : (
+            <MessageBubble key={m.id} message={m} sources={sources} onInsert={insert} selection={selected?.id === m.id ? selected.text : undefined} />
+          ),
         )}
         {streaming?.kind === "reply" && <StreamingBubble text={streaming.text} status={streaming.status} sources={sources} />}
         {awaiting && (

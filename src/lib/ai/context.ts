@@ -12,7 +12,7 @@
 import type { NudgeDoc, Source, ZoteroAnnotation } from "../types";
 import { sourcePages } from "../sources";
 import { markedText } from "../pdf/text";
-import { CITATIONS, DOC_REFS, GUIDE, REVIEW_SHARED, REVIEWER, workingOnBlock } from "./prompts";
+import { CITATIONS, DOC_REFS, GUIDE, REVIEW_SHARED, REVIEWER, SOURCES_LEFT_OUT, workingOnBlock } from "./prompts";
 import { workingPoint } from "./reviews";
 import { retrieve } from "./retrieval";
 
@@ -94,9 +94,10 @@ function turnContext(doc: NudgeDoc, docBlock: string): string {
 }
 
 /** A review of the document against the goal. Online, the sources go in
- *  whole; on the device, the passages that bear on the document. */
-export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTokens: number } | null): Promise<Built> {
-  const ready = doc.sources.filter((s) => s.status === "ready");
+ *  whole; on the device, the passages that bear on the document. Without
+ *  `withSources` (the Review button's menu), none of them. */
+export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTokens: number } | null, withSources: boolean): Promise<Built> {
+  const ready = withSources ? doc.sources.filter((s) => s.status === "ready") : [];
   const anyText = ready.some((s) => s.hasFile && (s.chars ?? 0) > 0);
   const parts: string[] = [];
   let docChars = 60_000;
@@ -128,7 +129,11 @@ export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTok
     DOC_REFS,
     anyText ? CITATIONS : "",
     `# The writer's goal\n\n${doc.goal.trim() || "(not stated)"}`,
-    parts.length ? `# Sources\n\n${parts.join("\n\n---\n\n")}` : "# Sources\n\nNo sources are attached.",
+    parts.length
+      ? `# Sources\n\n${parts.join("\n\n---\n\n")}`
+      : !withSources && doc.sources.length
+        ? `# Sources\n\n${SOURCES_LEFT_OUT}`
+        : "# Sources\n\nNo sources are attached.",
   ]
     .filter(Boolean)
     .join("\n\n");

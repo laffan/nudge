@@ -24,9 +24,11 @@ conversation, including page citations that open the PDF at the cited passage.
   cost by model.
 - **Document** (right). Hush's editor. Your own messages in the conversation can be
   dragged into it by their grip (⠿). A text selection inside one of your messages can
-  be dragged on its own. **Add to document** puts a message at the caret. Copy and
-  paste also work. The AI's replies can be copied but not dragged, because the
-  document is meant to be yours.
+  be dragged on its own. **Add to document** puts a message at the caret; while part
+  of the message is selected, it reads **Add selection to document** and adds just
+  that part. Copy and paste also work. The AI's replies and reviews can't be selected
+  or dragged, because the document is meant to be yours: their links and citations
+  can be pressed, and their copy buttons copy them whole.
   - **Suggest placement**, on each of your messages, shows where the message would
     fit. Hovering it scrolls the document to the sentence the message would follow
     and lights that sentence briefly. Pressing it also puts the caret there, ready
@@ -36,6 +38,10 @@ conversation, including page citations that open the PDF at the cited passage.
     assess the document against its goal. The advice appears in the review bar under
     the goal; the guide sees it too. Which points to take up is yours to decide, and
     the guide is told not to work through them unasked.
+    - The menu beside Review (▾) has **Include attached PDFs**. Turned off, the
+      reviewer sees only the goal and the draft, which costs less with large
+      sources. The choice is kept per document, and a review made without the PDFs
+      says so.
     - The bar shows the latest review and folds to a single line. **Earlier** lists
       the previous reviews with their times, to read again.
     - **Work on this** on a point narrows the bar to that point alone, and the guide
@@ -68,7 +74,8 @@ Settings → AI follows Snorkle's layout:
   - **Chat**, the guide's side of the conversation;
   - **Review**, the document's Review button.
 - **Usage.** Tokens and estimated cost by model (with its service, and whether it
-  served Chat or Review) and by day. Amounts under a cent show to four places.
+  served Chat or Review), and by day, with a row for each service (and so each key)
+  used that day. Amounts under a cent show to four places.
 
 The services are:
 

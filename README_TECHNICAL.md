@@ -48,11 +48,17 @@ src/
                      earlier reviews with their times
     chat/MessageBubble
                      a message: yours draggable (grip, or a selection inside it) and
-                     "Add to document"; the guide's as Markdown (`ReplyMarkdown`,
-                     also used by the review bar), citations as pills, references
-                     to the document as links into it, its questions underlined
-                     (lib/ai/questions.ts)
+                     "Add to document" ("Add selection to document" while words
+                     in it are selected: ChatPanel's `useMessageSelection` watches
+                     `selectionchange`, and the button takes the selection on
+                     pointerdown, before the press can clear it); the guide's as
+                     Markdown (`ReplyMarkdown`, also used by the review bar),
+                     citations as pills, references to the document as links
+                     into it, its questions underlined (lib/ai/questions.ts).
+                     The guide's and the reviewer's text can't be selected or
+                     dragged (`user-select: none` in chat.css)
     chat/Sources     source chips, the attach menu, the goal screen's drop zone
+    ReviewButton     Review, with its menu (include the attached PDFs or not)
     DocumentPane     the editor's column: title, word count, copy / export, and
                      Review last; Suggest placement's requests and document
                      references carried out
@@ -153,7 +159,10 @@ src-tauri/src/
 
 A **review** is the same path with the Review use. `buildReview` gives the reviewer
 (`REVIEWER` in prompts.ts) the goal, the sources and the document, not the
-conversation. It streams into the review bar and is kept in `NudgeDoc.reviews`, not
+conversation. With **Include attached PDFs** off in the Review button's menu
+(`NudgeDoc.reviewSources`), the sources, their citation rules and the on-device
+passages are left out, and the reviewer is told why (`SOURCES_LEFT_OUT`); the review
+records it (`Review.withSources`, set only when there were sources to leave out). It streams into the review bar and is kept in `NudgeDoc.reviews`, not
 among the messages. In the guide's history each review is placed by its time among
 the messages and passed on as something the writer shared (`REVIEW_SHARED`, role
 user), so the guide doesn't take the advice as its own. Its instructions tell it to
@@ -214,7 +223,8 @@ The layout is lifted from Snorkle's `ui/chrome/settings.js`:
   the downloaded GGUFs. The Rust core runs the on-device model the request names, or
   else the default (`local_model`).
 - **Usage.** `usage_add` / `usage_list` / `usage_reset`, totalled by model (with its
-  service and the uses it served) and by local day in `lib/ai/usage.ts`. A model the
+  service and the uses it served) and by local day, a row per service, in
+  `lib/ai/usage.ts`. A model the
   price table doesn't know makes its total "≥". Amounts under a cent show to four
   places (`formatUsd`).
 

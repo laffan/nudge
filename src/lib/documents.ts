@@ -46,6 +46,7 @@ export function blankDoc(): NudgeDoc {
     messages: [],
     reviews: [],
     working: null,
+    reviewSources: true,
     sources: [],
     costUsd: 0,
   };

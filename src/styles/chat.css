@@ -53,15 +53,20 @@
 .msg-grip:hover { color: var(--accent); background: var(--accent-soft); }
 .msg-grip:active { cursor: grabbing; }
 .msg-text { white-space: pre-wrap; line-height: 1.5; font-size: var(--chat-font-size, 15px); font-family: "iA Writer Quattro", Georgia, serif; overflow-wrap: anywhere; }
-.msg-tools { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 3px; opacity: 0; transition: opacity 0.15s; min-height: 24px; }
-.msg:hover .msg-tools { opacity: 1; }
+.msg-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 3px; opacity: 0; transition: opacity 0.15s; min-height: 24px; }
+.msg:hover .msg-tools, .msg.selecting .msg-tools { opacity: 1; }
 @media (pointer: coarse) { .msg-tools { opacity: 1; } }
-.msg-tools button { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: var(--muted); font-size: 12px; padding: 3px 6px; border-radius: 6px; cursor: pointer; }
+.msg-tools button { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; border: none; background: none; color: var(--muted); font-size: 12px; padding: 3px 6px; border-radius: 6px; cursor: pointer; }
 .msg-tools button:hover { color: var(--fg); background: var(--bg-hover); }
 .msg-guide .msg-tools { justify-content: flex-start; }
 .msg-model { font-size: 11px; color: var(--muted); margin-right: 2px; }
 
 .msg-guide { align-self: flex-start; padding: 0 4px; max-width: 94%; }
+/* The guide's and the reviewer's words can't be selected or dragged: only
+   the writer's go into the document. Their links and buttons still work, and
+   the copy buttons copy them whole. */
+.msg-guide, .review-bar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.msg-guide a, .review-bar a { -webkit-user-drag: none; }
 .msg-md { line-height: 1.6; font-size: calc(var(--chat-font-size, 15px) * 0.97); color: var(--fg); overflow-wrap: anywhere; }
 .msg-md > :first-child { margin-top: 0; }
 .msg-md > :last-child { margin-bottom: 0; }

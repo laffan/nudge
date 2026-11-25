@@ -98,7 +98,11 @@
 .btn.armed { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .usage-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .usage-table th, .usage-table td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--border); }
-.usage-table th:first-child, .usage-table td:first-child { text-align: left; }
+.usage-table th:first-child, .usage-table td:first-child, .usage-table .usage-service { text-align: left; }
+.usage-table td[rowspan] { vertical-align: top; }
+.usage-days th:nth-child(2) { text-align: left; }
+/* A day's services read as one group: a line under the day, none between. */
+.usage-days tbody tr:not(.day-end) td:not([rowspan]) { border-bottom-color: transparent; }
 .usage-table th { font-weight: 600; color: var(--muted); }
 .usage-table tfoot td { font-weight: 700; border-bottom: 0; }
 .usage-table + .usage-caption { margin-top: 18px; }

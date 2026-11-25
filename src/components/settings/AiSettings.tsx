@@ -178,16 +178,22 @@ function UsageTable() {
   useEffect(load, []);
   const days = events ? usageByDay(events) : null;
   const models = events ? usageByModel(events) : null;
-  const total = (days ?? []).reduce(
-    (t, d) => ({ requests: t.requests + d.requests, input: t.input + d.input, output: t.output + d.output, costUsd: t.costUsd + d.costUsd, unpriced: t.unpriced || d.unpriced }),
-    { requests: 0, input: 0, output: 0, costUsd: 0, unpriced: false },
-  );
+  const total = (days ?? [])
+    .flatMap((d) => d.services)
+    .reduce(
+      (t, d) => ({ requests: t.requests + d.requests, input: t.input + d.input, output: t.output + d.output, costUsd: t.costUsd + d.costUsd, unpriced: t.unpriced || d.unpriced }),
+      { requests: 0, input: 0, output: 0, costUsd: 0, unpriced: false },
+    );
   const fmt = (n: number) => n.toLocaleString();
   const cost = (n: number, unpriced: boolean) => `${unpriced ? "≥ " : ""}${formatUsd(n)}`;
-  const head = (first: string) => (
+  const head = (...first: string[]) => (
     <thead>
       <tr>
-        <th scope="col">{first}</th>
+        {first.map((f) => (
+          <th key={f} scope="col">
+            {f}
+          </th>
+        ))}
         <th scope="col">Requests</th>
         <th scope="col">Input</th>
         <th scope="col">Output</th>
@@ -195,11 +201,12 @@ function UsageTable() {
       </tr>
     </thead>
   );
-  const none = events?.length === 0 && (
-    <tr>
-      <td colSpan={5}>No AI requests yet.</td>
-    </tr>
-  );
+  const none = (cols: number) =>
+    events?.length === 0 && (
+      <tr>
+        <td colSpan={cols}>No AI requests yet.</td>
+      </tr>
+    );
   return (
     <div className="ai-usage">
       <div className="ai-head">
@@ -227,7 +234,7 @@ function UsageTable() {
       <table className="usage-table">
         {head("Model")}
         <tbody>
-          {none}
+          {none(5)}
           {models?.map((m) => (
             <tr key={m.key}>
               <td>
@@ -245,24 +252,28 @@ function UsageTable() {
         </tbody>
       </table>
       <h4 className="usage-caption">By day</h4>
-      <table className="usage-table">
-        {head("Date")}
+      <table className="usage-table usage-days">
+        {head("Date", "Service")}
         <tbody>
-          {none}
-          {days?.map((d) => (
-            <tr key={d.key}>
-              <td>{d.label}</td>
-              <td>{fmt(d.requests)}</td>
-              <td>{fmt(d.input)}</td>
-              <td>{fmt(d.output)}</td>
-              <td>{cost(d.costUsd, d.unpriced)}</td>
-            </tr>
-          ))}
+          {none(6)}
+          {days?.map((d) =>
+            d.services.map((s, i) => (
+              <tr key={`${d.key}:${s.provider}`} className={i === d.services.length - 1 ? "day-end" : undefined}>
+                {i === 0 && <td rowSpan={d.services.length}>{d.label}</td>}
+                <td className="usage-service">{providerLabel(s.provider)}</td>
+                <td>{fmt(s.requests)}</td>
+                <td>{fmt(s.input)}</td>
+                <td>{fmt(s.output)}</td>
+                <td>{cost(s.costUsd, s.unpriced)}</td>
+              </tr>
+            )),
+          )}
         </tbody>
         {Boolean(days?.length) && (
           <tfoot>
             <tr>
               <td>Total</td>
+              <td />
               <td>{fmt(total.requests)}</td>
               <td>{fmt(total.input)}</td>
               <td>{fmt(total.output)}</td>

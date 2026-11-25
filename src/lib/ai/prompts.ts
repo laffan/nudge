@@ -30,6 +30,9 @@ Write:
 
 Do not rewrite the writer's prose and do not draft replacement sentences: say what to consider, and leave the writing to them. Be direct and concrete, with no preamble and no closing summary. Plain Markdown: the overall sentences, then the numbered list.`;
 
+/** In place of the sources, for a review the writer asked for without them. */
+export const SOURCES_LEFT_OUT = "The writer has sources for this document but asked for this review without them. Review the draft against the goal on its own terms, and don't judge how it uses sources you can't see.";
+
 /** How the guide and the reviewer point into the writer's own document
  *  (lib/ai/citations.ts makes these links; the editor scrolls to them). */
 export const DOC_REFS = `DOCUMENT REFERENCES. To point to a particular place in the writer's document, quote a few of its words, copied character for character from the text between the <document> tags, in exactly this form:

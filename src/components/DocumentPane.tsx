@@ -11,10 +11,9 @@ import { updateCurrent } from "../lib/documents";
 import { toast, useApp, usePrefs } from "../lib/store";
 import { invoke, isTauri } from "../lib/tauri";
 import { findInDocument, findPlacement, showPlacement } from "../editor/placement";
-import { reviewDocument } from "../lib/ai/chat";
-import { readyFor } from "../lib/settings";
 import { copyText } from "./chat/MessageBubble";
-import { CopyIcon, ExportIcon, ReviewIcon } from "./Icons";
+import { CopyIcon, ExportIcon } from "./Icons";
+import { ReviewButton } from "./ReviewButton";
 
 export let activeEditor: EditorHandles | null = null;
 
@@ -48,8 +47,6 @@ export function DocumentPane() {
   const insertRequest = useApp((s) => s.insertRequest);
   const placementRequest = useApp((s) => s.placementRequest);
   const docFocusRequest = useApp((s) => s.docFocusRequest);
-  const goal = useApp((s) => s.current?.goal ?? "");
-  const busy = useApp((s) => Boolean(s.streaming));
   const prefs = usePrefs();
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorHandles | null>(null);
@@ -119,17 +116,6 @@ export function DocumentPane() {
     showPlacement(ed.view, { ...found, insertAt: found.to }, false);
   }, [docFocusRequest]);
 
-  const review = () => {
-    const app = useApp.getState();
-    const ready = readyFor(app.settings, app.keys, "review");
-    if (!ready.ok) {
-      toast(ready.why ?? "The Review model isn't set up", "error");
-      app.openSettings("ai");
-      return;
-    }
-    void reviewDocument();
-  };
-
   // "Add to document" from the conversation: at the caret if the writer has
   // been in the document, else at its end.
   useEffect(() => {
@@ -169,20 +155,7 @@ export function DocumentPane() {
           <button className="icon-btn" title="Export as a Markdown file" onClick={() => void exportFile(title, content)}>
             <ExportIcon size={15} />
           </button>
-          <button
-            className="btn small review-btn"
-            disabled={busy || !content.trim() || !goal.trim()}
-            title={
-              !goal.trim()
-                ? "Set the document's goal first"
-                : !content.trim()
-                  ? "Write something to review first"
-                  : "Assess the document against its goal; the advice appears under the goal"
-            }
-            onClick={review}
-          >
-            <ReviewIcon size={14} /> Review
-          </button>
+          <ReviewButton />
         </div>
       </header>
       <div className={`doc-editor${prefs.focusMode ? " focus" : ""}`} ref={host} />

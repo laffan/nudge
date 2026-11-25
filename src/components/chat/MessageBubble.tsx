@@ -83,6 +83,7 @@ function DocRef({ words, children }: { words: string; children: React.ReactNode 
     <a
       className="doc-ref"
       href="#"
+      draggable={false}
       title="Show in your document"
       onClick={(e) => {
         e.preventDefault();
@@ -116,7 +117,7 @@ export function ReplyMarkdown({ content, sources }: { content: string; sources: 
             const words = parseDocHref(h);
             if (words) return <DocRef words={words}>{children}</DocRef>;
             return (
-              <a href={href} target="_blank" rel="noreferrer">
+              <a href={href} target="_blank" rel="noreferrer" draggable={false}>
                 {children}
               </a>
             );
@@ -180,17 +181,24 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   sources,
   onInsert,
+  selection,
 }: {
   message: ChatMessage;
   sources: Source[];
   onInsert: (text: string) => void;
+  /** Words selected in this message (ChatPanel watches the selection). */
+  selection?: string;
 }) {
   const [dragging, setDragging] = useState(false);
+  // The selection as it was when Add was pressed, before the press could
+  // clear it.
+  const picked = useRef<string | null>(null);
 
   if (message.role === "user") {
     return (
       <div
-        className={`msg msg-user${dragging ? " dragging" : ""}`}
+        data-msg={message.id}
+        className={`msg msg-user${dragging ? " dragging" : ""}${selection ? " selecting" : ""}`}
         onDragStart={(e) => {
           // A selection inside the message drags just itself; the grip
           // drags the whole message.
@@ -213,8 +221,19 @@ export const MessageBubble = memo(function MessageBubble({
         </div>
         <div className="msg-tools">
           <SuggestButton text={message.content} />
-          <button title="Put into the document at the caret" onClick={() => onInsert(message.content)}>
-            <ArrowIntoIcon size={13} /> Add to document
+          <button
+            title={selection ? "Put the selected words into the document at the caret" : "Put into the document at the caret"}
+            // Pressing mustn't clear the selection it's about to add.
+            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={() => (picked.current = selection ?? null)}
+            onClick={() => {
+              const part = picked.current ?? selection;
+              picked.current = null;
+              onInsert(part ?? message.content);
+              if (part) window.getSelection()?.removeAllRanges();
+            }}
+          >
+            <ArrowIntoIcon size={13} /> {selection ? "Add selection to document" : "Add to document"}
           </button>
           <button title="Copy" onClick={() => copyText(message.content)}>
             <CopyIcon size={13} />

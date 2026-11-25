@@ -120,6 +120,9 @@ export interface Review {
   /** Its points the writer has marked complete, by position in its list
    *  (lib/ai/reviews.ts). */
   done: number[];
+  /** Whether the reviewer was given the attached sources (missing on
+   *  reviews from before it could be left out: they were). */
+  withSources?: boolean;
 }
 
 /** The review point the writer is working on (Work on this). */
@@ -141,6 +144,8 @@ export interface NudgeDoc {
   messages: ChatMessage[];
   reviews: Review[];
   working: Working | null;
+  /** Review with the attached sources (the Review button's menu). */
+  reviewSources: boolean;
   sources: Source[];
   costUsd: number;
 }

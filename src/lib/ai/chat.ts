@@ -111,9 +111,15 @@ async function run(use: UseId): Promise<void> {
 async function build(doc: NudgeDoc, settings: Settings, use: UseId, provider: Provider): Promise<Built> {
   const local = provider === "local";
   if (use === "review") {
-    return buildReview(doc, local ? { nCtx: settings.localContext, replyTokens: LOCAL_REVIEW_TOKENS } : null);
+    return buildReview(doc, local ? { nCtx: settings.localContext, replyTokens: LOCAL_REVIEW_TOKENS } : null, reviewsWithSources(doc));
   }
   return local ? buildLocal(doc, settings.localContext, LOCAL_REPLY_TOKENS) : buildOnline(doc);
+}
+
+/** Whether a review of `doc` now is given its sources: the Review
+ *  button's menu says, and there have to be some. */
+export function reviewsWithSources(doc: NudgeDoc): boolean {
+  return doc.reviewSources !== false && doc.sources.length > 0;
 }
 
 async function stream(doc: NudgeDoc, settings: Settings, use: UseId, provider: Provider, model: string): Promise<void> {
@@ -173,7 +179,18 @@ async function stream(doc: NudgeDoc, settings: Settings, use: UseId, provider: P
   const add: (d: NudgeDoc) => NudgeDoc =
     use === "review"
       ? (d) => {
-          const review: Review = { id: newId("rev"), ts, content, provider, model: servedBy, usage, costUsd, done: [] };
+          const review: Review = {
+            id: newId("rev"),
+            ts,
+            content,
+            provider,
+            model: servedBy,
+            usage,
+            costUsd,
+            done: [],
+            // Noted only when there were sources to leave out.
+            ...(doc.sources.length ? { withSources: reviewsWithSources(doc) } : {}),
+          };
           return { ...d, reviews: [...(d.reviews ?? []), review], working: null, costUsd: d.costUsd + costUsd };
         }
       : (d) => {
