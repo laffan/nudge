@@ -77,6 +77,7 @@ src/
                      localModels.ts (the offline catalog and why)
 src-tauri/src/
   lib.rs             every command; the opt-in smoke test of the on-device path
+  ios.rs             iPad only: the status bar hidden (tao's view controller)
   state.rs           data dir, HTTP client, settings, stop flags, the local engine
   settings.rs        keys, Zotero library, provider and models (settings.json)
   storage.rs         documents/<id>.json + index.json; sources/<id>.pdf + .text.json
@@ -215,6 +216,40 @@ MetalKit and Accelerate in that way, so the Xcode project has to link them itsel
 
 Both take effect when the project is generated (`npm run ios:init`), not on later
 builds.
+
+## The iPad window
+
+- **No status bar.** `src/ios.rs` calls `setPrefersStatusBarHidden:` on tao's
+  `TaoUIViewController`, which Tauri hands out as the webview's
+  `view_controller()`. It does this at setup, on `RunEvent::Ready` and on
+  `RunEvent::Resumed`, as Snorkle does. `UIViewControllerBasedStatusBarAppearance`
+  stays YES in `Info.ios.plist`: with NO, UIKit ignores the view controller, and
+  apps built with the current SDK get no effect from
+  `UIApplication.statusBarHidden`.
+- **Nothing of the app's own starts in the top strip.** iPadOS 26 uses the window's
+  top ~30 pt to drag, shrink or un-fullscreen the window, and to show the window
+  controls. On iPad (`html.ipados`) each column's head starts below
+  `--ipad-top` (36 px, or the safe area if a status bar shows anyway).
+- **Trackpad scrolling.** In landscape with a Magic Keyboard, two-finger scrolls
+  arrived turned a quarter round. `Info.ios.plist` sets two keys, both needed, as
+  in Snorkle and Zotero Helper:
+  - `UIApplicationSupportsIndirectInputEvents`;
+  - a single-window `UIApplicationSceneManifest` naming tao's `TaoSceneDelegate`
+    (tao 0.37 and later). Without it, tao starts on the legacy
+    application-delegate path and the window isn't created in its scene's
+    orientation.
+
+  Plist keys are read from the built app, so a change needs a rebuild and
+  reinstall, not a hot reload.
+- **Type-checking the iPad target on Linux.** Run from `src-tauri`:
+
+  ```sh
+  DOCS_RS=1 SDKROOT=<dir> CC_aarch64_apple_ios=clang cargo check --target aarch64-apple-ios --no-default-features
+  ```
+
+  `<dir>/usr/include` holds stub `TargetConditionals.h`, `assert.h` and
+  `string.h`, so `ring`'s C compiles without Apple's SDK. `DOCS_RS` skips objc2's
+  C helper. This checks the Rust, not the link.
 
 ## Not yet done / known limits
 

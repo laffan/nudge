@@ -5,6 +5,8 @@
 mod ai;
 mod downloads;
 mod error;
+#[cfg(target_os = "ios")]
+mod ios;
 mod settings;
 mod state;
 mod storage;
@@ -216,6 +218,8 @@ pub fn run() {
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             app.manage(AppState::new(dir));
+            #[cfg(target_os = "ios")]
+            ios::hide_status_bar(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -245,8 +249,12 @@ pub fn run() {
             local_delete,
             local_unload,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Nudge");
+        .build(tauri::generate_context!())
+        .expect("error while building Nudge")
+        .run(|_app, _event| {
+            #[cfg(target_os = "ios")]
+            ios::on_run_event(_app, &_event);
+        });
 }
 
 /// End-to-end check of the on-device path: the app's own downloader fetches

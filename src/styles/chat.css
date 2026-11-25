@@ -15,7 +15,7 @@
 .goal-warn { color: var(--fg-soft); font-size: 13px; }
 
 .chat-head { padding: 12px 16px 8px; border-bottom: 1px solid var(--border); background: var(--bg-chat); }
-.ipados .chat-head { padding-top: 14px; }
+.ipados .chat-head { padding-top: var(--ipad-top); }
 .goal-card { display: block; width: 100%; text-align: left; border: none; background: none; padding: 4px 0; cursor: pointer; border-radius: 8px; }
 .goal-card:hover .goal-text { color: var(--fg); }
 .goal-label { display: inline-block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--accent); margin-right: 8px; vertical-align: 1px; }

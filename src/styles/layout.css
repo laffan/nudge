@@ -1,4 +1,12 @@
 .app { display: flex; height: 100%; width: 100%; }
+
+/* iPad: there is no status bar (src-tauri/src/ios.rs), so the columns reach
+   the top of the window — where iPadOS 26 keeps a strip about 30 pt tall
+   that drags, shrinks or un-fullscreens the window, and puts the window
+   controls. As in Snorkle, nothing of the app's own starts in it: each
+   column's head begins below it (or below the safe area, should a status
+   bar show after all, as it may for a window that isn't full screen). */
+.ipados { --ipad-top: max(36px, calc(env(safe-area-inset-top, 0px) + 12px)); }
 .sidebar-wrap { flex: none; height: 100%; }
 .sidebar-scrim { display: none; }
 .main { flex: 1; min-width: 0; height: 100%; position: relative; display: flex; }
@@ -15,7 +23,7 @@
 .resizer:hover, .resizer:active { background: var(--accent); }
 
 .sidebar-reopen { position: absolute; top: 10px; left: 10px; z-index: 20; }
-.ipados .sidebar-reopen { top: 14px; }
+.ipados .sidebar-reopen { top: calc(var(--ipad-top) - 4px); }
 
 .welcome { margin: auto; max-width: 440px; text-align: center; padding: 24px; }
 .welcome h1 { font-family: "iA Writer Quattro", Georgia, serif; font-size: 40px; margin: 0 0 12px; letter-spacing: -0.01em; }

@@ -109,6 +109,12 @@ Then open the generated Xcode project and set your signing team, or set the
   iPadOS's default per-app limit; there, Qwen3.5 4B at an 8,192-token context may
   not fit.
 
+On the iPad the status bar is hidden, so the columns reach the top of the window;
+each column's controls start below the strip iPadOS 26 uses to move the window.
+Trackpad scrolling relies on two `Info.ios.plist` keys, taken from Snorkle. Plist
+changes take effect only after a rebuild and reinstall; a hot reload doesn't pick
+them up.
+
 Day-to-day:
 
 ```sh

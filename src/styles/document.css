@@ -1,7 +1,7 @@
 /* The document column: Hush's editor. */
 .document { height: 100%; display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
 .doc-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px 6px 24px; }
-.ipados .doc-head { padding-top: 14px; }
+.ipados .doc-head { padding-top: var(--ipad-top); }
 .doc-title-input { flex: 1; min-width: 0; border: none; outline: none; background: none; font-family: var(--doc-font); font-size: 20px; font-weight: 700; color: var(--fg); padding: 4px 0; }
 .doc-title-input::placeholder { color: var(--muted); }
 .doc-head-tools { display: flex; align-items: center; gap: 2px; flex: none; }

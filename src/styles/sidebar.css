@@ -1,7 +1,7 @@
 /* The document list, after Hush's files panel. */
 .sidebar { height: 100%; display: flex; flex-direction: column; background: var(--bg-sidebar); }
 .sidebar-head { display: flex; align-items: center; gap: 4px; padding: 10px 8px 6px; }
-.ipados .sidebar-head { padding-top: 14px; }
+.ipados .sidebar-head { padding-top: var(--ipad-top); }
 .sidebar-name { flex: 1; font-weight: 600; font-size: 13px; color: var(--fg-soft); letter-spacing: 0.02em; padding-left: 4px; }
 .sidebar-filter { margin: 2px 10px 8px; display: flex; align-items: center; gap: 6px; padding: 0 9px; height: 30px; border-radius: 8px; background: var(--bg-hover); color: var(--muted); }
 .sidebar-filter input { flex: 1; border: none; background: none; outline: none; min-width: 0; font-size: 13px; color: var(--fg); }

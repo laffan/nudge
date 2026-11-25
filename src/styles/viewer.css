@@ -1,7 +1,7 @@
 /* The source viewer column. */
 .viewer { height: 100%; display: flex; flex-direction: column; background: var(--bg-sidebar); min-width: 0; }
 .viewer-head { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); }
-.ipados .viewer-head { padding-top: 12px; }
+.ipados .viewer-head { padding-top: var(--ipad-top); }
 .viewer-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .viewer-tools { display: flex; align-items: center; gap: 1px; flex: none; }
 .viewer-page { font-size: 12px; color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
