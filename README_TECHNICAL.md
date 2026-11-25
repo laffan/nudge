@@ -177,6 +177,12 @@ stray match. With nothing in common, the end of the document is suggested.
 - **Pressing** it (`mode: "place"`) also puts the caret after the sentence, so Add to
   document inserts there.
 
+A message that's already in the document gets no placement: the button shows a tip
+("This is already in your document.") instead (`isInDocument`, checked as it's
+used). The check ignores case, spacing, curly vs straight quotes, dashes and
+Markdown emphasis. It counts a message as there when the whole text is found, or
+every sentence of it is, so a message split up or moved apart since still counts.
+
 ## The guide's instructions
 
 `lib/ai/prompts.ts` is the product's core. It tells the model to:

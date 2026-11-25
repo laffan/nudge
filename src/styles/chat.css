@@ -106,3 +106,10 @@
 .msg-review li:hover .take-up, .take-up:focus { opacity: 1; }
 @media (pointer: coarse) { .take-up { opacity: 1; } }
 .take-up:hover { border-color: var(--accent); color: var(--accent); }
+
+/* A small tip over a message's tool (Suggest placement: "already in your
+   document"). */
+.tip-anchor { position: relative; display: inline-flex; }
+.tip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 5px 9px; border-radius: 7px; background: var(--fg); color: var(--bg); font-size: 12px; box-shadow: var(--shadow); pointer-events: none; z-index: 5; animation: tip-in 0.12s ease-out; }
+.tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--fg); }
+@keyframes tip-in { from { opacity: 0; transform: translate(-50%, 3px); } }

@@ -63,6 +63,31 @@ function sentences(doc: string): Sentence[] {
   return out;
 }
 
+/** Text as compared for "already there": lower case, one kind of quote
+ *  and dash, no Markdown emphasis, single spaces. */
+function plainForm(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/(\*\*|__|==|~~|[*_])/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Is `text` already in the document — whole, or every one of its
+ *  sentences, should they have been split up or moved apart since? Then
+ *  there's no placement to suggest. */
+export function isInDocument(doc: string, text: string): boolean {
+  const d = plainForm(doc);
+  const t = plainForm(text);
+  if (!t || !d) return false;
+  if (d.includes(t)) return true;
+  const parts = t.split(/(?<=[.!?])\s+/).filter((s) => s.split(" ").length >= 3);
+  return parts.length > 0 && parts.every((s) => d.includes(s));
+}
+
 export function findPlacement(doc: string, text: string): Placement | null {
   const list = sentences(doc);
   if (list.length === 0) return null;

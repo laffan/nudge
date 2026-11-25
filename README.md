@@ -27,7 +27,8 @@ conversation, including page citations that open the PDF at the cited passage.
   - **Suggest placement**, on each of your messages, shows where the message would
     fit. Hovering it scrolls the document to the sentence the message would follow
     and lights that sentence briefly. Pressing it also puts the caret there, ready
-    for Add to document.
+    for Add to document. For a message that's already in the document, it does
+    nothing but say so in a small tip.
   - **Review**, at the top of the document, has a separate reviewer assess the
     document against its goal. The advice goes into the conversation, where you and
     the guide can both see it. Each point has **Work on this**, which puts the point

@@ -12,7 +12,7 @@
 // document is the writer's. A review (the document's Review button) shows
 // as a card of its own, each point with Work on this, which puts the point
 // in the composer for the writer to take up — or not.
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CITE_SCHEME, citationLabel, linkifyCitations, parseCiteHref } from "../../lib/ai/citations";
@@ -22,6 +22,7 @@ import { modelLabel } from "../../lib/ai/models";
 import { useApp, usePrefs } from "../../lib/store";
 import type { ChatMessage, Source } from "../../lib/types";
 import { SNIPPET_TYPE } from "../../editor/editor";
+import { isInDocument } from "../../editor/placement";
 import { ArrowIntoIcon, CopyIcon, EyeIcon, GripIcon, TargetIcon } from "../Icons";
 
 export function copyText(text: string): void {
@@ -135,6 +136,48 @@ function ReplyMarkdown({ content, sources, review }: { content: string; sources:
   );
 }
 
+/** Suggest placement: hover shows where the message would fit, a press
+ *  puts the caret there. Not for a message that's already in the document:
+ *  then a small tip says so instead. The document is read at the moment of
+ *  asking, so the bubbles don't re-render as it's typed in. */
+function SuggestButton({ text }: { text: string }) {
+  const suggest = useApp((s) => s.suggestPlacement);
+  const [already, setAlready] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attempt = (mode: "preview" | "place") => {
+    const doc = useApp.getState().current?.content ?? "";
+    if (isInDocument(doc, text)) {
+      setAlready(true);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setAlready(false), 2500);
+      return;
+    }
+    setAlready(false);
+    suggest(text, mode);
+  };
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  return (
+    <span className="tip-anchor">
+      <button
+        title={already ? undefined : "Show where this would fit in the document (press to put the caret there)"}
+        onMouseEnter={() => attempt("preview")}
+        onMouseLeave={() => setAlready(false)}
+        onFocus={() => attempt("preview")}
+        onClick={() => attempt("place")}
+      >
+        <TargetIcon size={13} /> Suggest placement
+      </button>
+      {already && (
+        <span className="tip" role="status">
+          This is already in your document.
+        </span>
+      )}
+    </span>
+  );
+}
+
 export const MessageBubble = memo(function MessageBubble({
   message,
   sources,
@@ -145,7 +188,6 @@ export const MessageBubble = memo(function MessageBubble({
   onInsert: (text: string) => void;
 }) {
   const [dragging, setDragging] = useState(false);
-  const suggest = useApp((s) => s.suggestPlacement);
 
   if (message.role === "user") {
     return (
@@ -172,14 +214,7 @@ export const MessageBubble = memo(function MessageBubble({
           <div className="msg-text">{message.content}</div>
         </div>
         <div className="msg-tools">
-          <button
-            title="Show where this would fit in the document (press to put the caret there)"
-            onMouseEnter={() => suggest(message.content, "preview")}
-            onFocus={() => suggest(message.content, "preview")}
-            onClick={() => suggest(message.content, "place")}
-          >
-            <TargetIcon size={13} /> Suggest placement
-          </button>
+          <SuggestButton text={message.content} />
           <button title="Put into the document at the caret" onClick={() => onInsert(message.content)}>
             <ArrowIntoIcon size={13} /> Add to document
           </button>
