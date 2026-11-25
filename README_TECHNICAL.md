@@ -81,6 +81,8 @@ src/
     caret.ts         the caret's shape, colour and animation; the caret at rest
     click-focus.ts   a click back into the editor places the caret and selects
                      nothing (WebKit's scroll on focus)
+    google-doc-paste.ts
+                     a paste from Google Docs as Markdown (Hush's converter)
     placement.ts     Suggest placement: the sentence a message would follow, and
                      its brief light; where quoted words are (`findInDocument`)
     *.js             ported unchanged from Hush (same author): sentence-core,
@@ -339,6 +341,20 @@ each other stay two lists. It goes on the clipboard through `ClipboardItem`, as
 text/html with the Markdown as text/plain for places that take only text; where
 there is no ClipboardItem, a hidden editable element holding the HTML is selected
 and copied.
+
+Pasting goes the other way (`editor/google-doc-paste.ts`, Hush's
+`html-to-markdown.js` and `paste-extension.js`, less its comment and tab markers
+for sync). Only HTML Google Docs made is converted, known by the
+`docs-internal-guid-…` id it puts on every copy; anything else (the conversation,
+web pages, Word) pastes as plain text, as CodeMirror does by default. Hush converts
+every rich paste. The converter unwraps Google's `<b id="docs-internal-guid-…">`
+envelope (which would make everything bold), reads bold, italics, strikethrough and
+highlights from the spans' inline styles (the last `background-color` declared, a
+plain one ignored), takes paragraphs indented half a level or more as block quotes
+(dropping emphasis that covers the whole quoted line, which is the quote style's),
+joins Google's one-list-per-item lists by `aria-level`, drops comment markers, and
+takes links out of Google's `google.com/url?q=` redirect. The result replaces the
+selection as one undo step (`input.paste`).
 
 ## Suggest placement
 

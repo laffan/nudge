@@ -18,6 +18,7 @@ import { placementFlash } from "./placement";
 import { steadyClickFocus } from "./click-focus";
 import { quickFind } from "./quick-find";
 import { caretRest } from "./caret";
+import { googleDocPaste } from "./google-doc-paste";
 import { SHORTCUTS, bindingOf } from "./shortcuts";
 import { toCodeMirrorKey } from "./shortcuts-core.js";
 
@@ -151,6 +152,7 @@ export function createEditor(
         instanceHighlightField,
         wrapOnSelection,
         snippetDrop,
+        googleDocPaste,
         steadyClickFocus,
         caretRest,
         placeholder("Your document. Write here, or drag your own words across from the conversation."),

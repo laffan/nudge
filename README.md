@@ -44,6 +44,9 @@ conversation, including page citations that open the PDF at the cited passage.
   the text as written, and **Copy as Google Doc** (from Hush) copies it formatted,
   so headings, emphasis, lists, links and highlights survive a paste into Google
   Docs or Word. Both copy the whole document and leave out your %%comments%%.
+  The other way, text pasted from Google Docs arrives as Markdown, its headings,
+  emphasis, highlights, links, lists and indented quotes kept; other pastes come in
+  as plain text.
   - **Suggest placement**, on each of your messages, shows where the message would
     fit. Hovering it scrolls the document to the sentence the message would follow
     and lights that sentence briefly. Pressing it also puts the caret there, ready
