@@ -2,13 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Lets the app use more of the iPad's memory than the default
-       per-app limit: an on-device model of ~2.7 GB needs it on an 8 GB
-       M1 iPad. Merge these keys into the generated Xcode target's
-       entitlements (see README, "iPad"). -->
+  <!-- Lets the app use more of the iPad's memory than the default per-app
+       limit, for an on-device model of ~2.7 GB on an 8 GB M1 iPad.
+       scripts/ios-entitlements.mjs copies this into the generated Xcode
+       project (see README, "iPad").
+
+       Extended Virtual Addressing is deliberately not here: it raises
+       address space, not memory, a model this size doesn't need it, and
+       Personal (free) teams can't sign an app that asks for it. -->
   <key>com.apple.developer.kernel.increased-memory-limit</key>
-  <true/>
-  <key>com.apple.developer.kernel.extended-virtual-addressing</key>
   <true/>
 </dict>
 </plist>

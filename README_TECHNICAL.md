@@ -207,8 +207,11 @@ MetalKit and Accelerate in that way, so the Xcode project has to link them itsel
 - Tauri's project template already links Metal and MetalKit.
 - `bundle.iOS.frameworks` in `tauri.conf.json` adds Accelerate (ggml's `vDSP_*`
   calls) and Foundation.
-- `scripts/ios-entitlements.mjs` merges `src-tauri/ios/Nudge.entitlements` into the
-  generated project. Tauri's config has no entitlements option.
+- `scripts/ios-entitlements.mjs` brings the generated project's memory
+  entitlements in line with `src-tauri/ios/Nudge.entitlements`. Tauri's config has
+  no entitlements option. Only Increased Memory Limit is requested: Personal teams
+  can't sign Extended Virtual Addressing, and the script removes it if an earlier
+  run added it. `--no-memory-limit` removes Increased Memory Limit too.
 
 Both take effect when the project is generated (`npm run ios:init`), not on later
 builds.

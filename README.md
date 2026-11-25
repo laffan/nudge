@@ -99,11 +99,15 @@ Then open the generated Xcode project and set your signing team, or set the
   with `"_vDSP_…", referenced from: ggml_compute_forward_…`. Tauri applies this
   setting only when it creates the project. If `src-tauri/gen/apple` predates it,
   delete that folder and run `npm run ios:init` again.
-- **Adds the increased-memory-limit entitlements** from
-  `src-tauri/ios/Nudge.entitlements` to the generated project. Without them, iPadOS
-  stops the app when an on-device model of about 2.7 GB is loaded on an 8 GB iPad.
-  If signing rejects them, add **Increased Memory Limit** (and **Extended Virtual
-  Addressing**) under the target's Signing & Capabilities.
+- **Adds the Increased Memory Limit entitlement** from
+  `src-tauri/ios/Nudge.entitlements` to the generated project. It gives the app
+  more room for an on-device model of about 2.7 GB on an 8 GB iPad. Extended
+  Virtual Addressing is left out on purpose: a model this size doesn't need it, and
+  a Personal (free) team can't sign an app that asks for it. If your team can't
+  have Increased Memory Limit either, run
+  `npm run ios:entitlements -- --no-memory-limit`. The app still runs, within
+  iPadOS's default per-app limit; there, Qwen3.5 4B at an 8,192-token context may
+  not fit.
 
 Day-to-day:
 
