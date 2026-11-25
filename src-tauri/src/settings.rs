@@ -17,7 +17,13 @@ pub struct Settings {
     pub zotero_library_type: String,
 
     // AI
-    /// Which provider answers: "local", "anthropic" or "openai".
+    /// Which service and model each use of AI takes ("chat", "review"):
+    /// { "chat": { "provider": "anthropic", "model": "claude-opus-5-5" }, … }.
+    /// Its shape belongs to the frontend (src/lib/settings.ts); this side
+    /// keeps it as given.
+    pub uses: serde_json::Value,
+    /// Before uses: the one provider every turn went to. Read once by the
+    /// frontend to fill `uses` in; kept so older settings still load.
     pub provider: String,
     pub anthropic_api_key: String,
     pub openai_api_key: String,
@@ -41,6 +47,7 @@ impl Default for Settings {
             zotero_api_key: String::new(),
             zotero_library_id: String::new(),
             zotero_library_type: "user".into(),
+            uses: serde_json::Value::Object(Default::default()),
             provider: "local".into(),
             anthropic_api_key: String::new(),
             openai_api_key: String::new(),
@@ -63,6 +70,14 @@ pub fn load(data_dir: &Path) -> Settings {
         .ok()
         .and_then(|t| serde_json::from_str(&t).ok())
         .unwrap_or_default()
+}
+
+impl Settings {
+    /// As the frontend sees them: the API keys left out. A saved key is
+    /// never shown again (as in Snorkle); `ai_status` says which are saved.
+    pub fn without_keys(&self) -> Settings {
+        Settings { anthropic_api_key: String::new(), openai_api_key: String::new(), ..self.clone() }
+    }
 }
 
 pub fn save(data_dir: &Path, s: &Settings) -> crate::Result<()> {

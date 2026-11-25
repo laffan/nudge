@@ -2,11 +2,16 @@
 //
 // The writer's own messages are the material of the document, so they can
 // be carried into it: dragged whole by the grip (or as any selection of
-// their text), or sent to the caret with the arrow button. The guide's
-// replies render as Markdown, their [[cite:S:P:quote]] citations as pills
-// that open the source viewer at the page and mark the passage. Its words
-// can be copied, but carry no drag affordance: the document is the
-// writer's.
+// their text), or sent to the caret with the arrow button. Suggest
+// placement shows where one fits (editor/placement.ts): hovering scrolls
+// the document there and flashes the sentence it would follow; pressing
+// also puts the caret after it, for Add to document. The guide's replies
+// render as Markdown, their [[cite:S:P:quote]] citations as pills that open
+// the source viewer at the page and mark the passage, and their questions
+// underlined. Its words can be copied, but carry no drag affordance: the
+// document is the writer's. A review (the document's Review button) shows
+// as a card of its own, each point with Work on this, which puts the point
+// in the composer for the writer to take up — or not.
 import { memo, useMemo, useState } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,10 +19,10 @@ import { CITE_SCHEME, citationLabel, linkifyCitations, parseCiteHref } from "../
 import { localLabel } from "../../lib/ai/localModels";
 import { rehypeQuestions } from "../../lib/ai/questions";
 import { modelLabel } from "../../lib/ai/models";
-import { useApp } from "../../lib/store";
+import { useApp, usePrefs } from "../../lib/store";
 import type { ChatMessage, Source } from "../../lib/types";
 import { SNIPPET_TYPE } from "../../editor/editor";
-import { ArrowIntoIcon, CopyIcon, EyeIcon, GripIcon } from "../Icons";
+import { ArrowIntoIcon, CopyIcon, EyeIcon, GripIcon, TargetIcon } from "../Icons";
 
 export function copyText(text: string): void {
   void navigator.clipboard?.writeText(text).catch(() => {
@@ -68,6 +73,68 @@ function plain(content: string): string {
   return content.replace(/\[\[\s*(?:cite|p)\s*:\s*\d+\s*:\s*(\d+)(?:-\d+)?(?:\s*:[^\]]*)?\]\]/gi, "(p. $1)");
 }
 
+/** A hast node's text, for a review point's "Work on this". */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function nodeText(node: any): string {
+  if (!node) return "";
+  if (node.type === "text") return String(node.value ?? "");
+  return (node.children ?? []).map(nodeText).join("");
+}
+
+/** A reply as Markdown: citations as pills, questions underlined (unless
+ *  turned off in Settings → Chat), and for a review, each point with a way
+ *  to take it up. */
+function ReplyMarkdown({ content, sources, review }: { content: string; sources: Source[]; review?: boolean }) {
+  const md = useMemo(() => linkifyCitations(content), [content]);
+  const underline = usePrefs((s) => s.underlineQuestions);
+  const prefill = useApp((s) => s.prefillComposer);
+  return (
+    <div className="msg-md">
+      <Markdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={underline ? [rehypeQuestions] : []}
+        urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
+        components={{
+          a: ({ href, children }) =>
+            parseCiteHref(String(href ?? "")) ? (
+              <CitePill href={String(href)} sources={sources} />
+            ) : (
+              <a href={href} target="_blank" rel="noreferrer">
+                {children}
+              </a>
+            ),
+          table: ({ children }) => (
+            <div className="md-table">
+              <table>{children}</table>
+            </div>
+          ),
+          ...(review
+            ? {
+                li: ({ children, node }) => (
+                  <li>
+                    {children}
+                    <button
+                      className="take-up"
+                      title="Put this point in your reply, to edit and send"
+                      onClick={() => {
+                        const point = plain(nodeText(node)).replace(/\s+/g, " ").trim().slice(0, 400);
+                        prefill(`I'd like to take up this point from the review: “${point}”`);
+                      }}
+                    >
+                      Work on this
+                    </button>
+                  </li>
+                ),
+              }
+            : {}),
+        }}
+      >
+        {md}
+      </Markdown>
+    </div>
+  );
+}
+
 export const MessageBubble = memo(function MessageBubble({
   message,
   sources,
@@ -78,7 +145,7 @@ export const MessageBubble = memo(function MessageBubble({
   onInsert: (text: string) => void;
 }) {
   const [dragging, setDragging] = useState(false);
-  const md = useMemo(() => (message.role === "assistant" ? linkifyCitations(message.content) : ""), [message]);
+  const suggest = useApp((s) => s.suggestPlacement);
 
   if (message.role === "user") {
     return (
@@ -105,6 +172,14 @@ export const MessageBubble = memo(function MessageBubble({
           <div className="msg-text">{message.content}</div>
         </div>
         <div className="msg-tools">
+          <button
+            title="Show where this would fit in the document (press to put the caret there)"
+            onMouseEnter={() => suggest(message.content, "preview")}
+            onFocus={() => suggest(message.content, "preview")}
+            onClick={() => suggest(message.content, "place")}
+          >
+            <TargetIcon size={13} /> Suggest placement
+          </button>
           <button title="Put into the document at the caret" onClick={() => onInsert(message.content)}>
             <ArrowIntoIcon size={13} /> Add to document
           </button>
@@ -117,34 +192,13 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   const who = message.provider === "local" ? localLabel(message.model ?? "") : message.model ? modelLabel(message.model) : "";
+  const review = message.kind === "review";
   return (
-    <div className="msg msg-guide">
-      <div className="msg-md">
-        <Markdown
-          remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeQuestions]}
-          urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
-          components={{
-            a: ({ href, children }) =>
-              parseCiteHref(String(href ?? "")) ? (
-                <CitePill href={String(href)} sources={sources} />
-              ) : (
-                <a href={href} target="_blank" rel="noreferrer">
-                  {children}
-                </a>
-              ),
-            table: ({ children }) => (
-              <div className="md-table">
-                <table>{children}</table>
-              </div>
-            ),
-          }}
-        >
-          {md}
-        </Markdown>
-      </div>
+    <div className={`msg msg-guide${review ? " msg-review" : ""}`}>
+      {review && <div className="review-head">Review</div>}
+      <ReplyMarkdown content={message.content} sources={sources} review={review} />
       <div className="msg-tools">
-        <span className="msg-model">{who}</span>
+        <span className="msg-model">{review ? `Reviewed by ${who}` : who}</span>
         <button title="Copy" onClick={() => copyText(plain(message.content))}>
           <CopyIcon size={13} />
         </button>
@@ -153,25 +207,13 @@ export const MessageBubble = memo(function MessageBubble({
   );
 });
 
-/** The reply as it streams in. */
-export function StreamingBubble({ text, status, sources }: { text: string; status: string; sources: Source[] }) {
-  const md = useMemo(() => linkifyCitations(text), [text]);
+/** The reply (or review) as it streams in. */
+export function StreamingBubble({ text, status, sources, review }: { text: string; status: string; sources: Source[]; review?: boolean }) {
   return (
-    <div className="msg msg-guide streaming">
+    <div className={`msg msg-guide streaming${review ? " msg-review" : ""}`}>
+      {review && <div className="review-head">Review</div>}
       {text ? (
-        <div className="msg-md">
-          <Markdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeQuestions]}
-            urlTransform={(url) => (url.startsWith(CITE_SCHEME) ? url : defaultUrlTransform(url))}
-            components={{
-              a: ({ href, children }) =>
-                parseCiteHref(String(href ?? "")) ? <CitePill href={String(href)} sources={sources} /> : <a href={href}>{children}</a>,
-            }}
-          >
-            {md}
-          </Markdown>
-        </div>
+        <ReplyMarkdown content={text} sources={sources} />
       ) : (
         <div className="msg-status">
           <span className="dots">

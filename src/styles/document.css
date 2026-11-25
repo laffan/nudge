@@ -22,3 +22,8 @@
 .doc-editor .cm-panels input, .doc-editor .cm-panels button { font-size: 13px; }
 .doc-editor .cm-searchMatch { background: var(--doc-highlight); }
 .doc-editor .cm-instance-highlight, .doc-editor .cm-selectionMatch { background: var(--accent-soft); }
+
+/* Suggest placement: the sentence a message would follow, lit briefly. */
+.cm-placement-flash { background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent-soft); border-radius: 2px; animation: placement-fade 1.8s ease-in forwards; }
+@keyframes placement-fade { 0%, 55% { background: color-mix(in srgb, var(--accent) 28%, transparent); } 100% { background: transparent; box-shadow: none; } }
+.review-btn { height: 28px; margin-right: 4px; }

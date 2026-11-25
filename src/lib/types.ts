@@ -6,20 +6,43 @@
 
 export type Provider = "local" | "anthropic" | "openai";
 
+/** The features that use AI, each with a service and model of its own
+ *  (Settings → AI → Uses, after Snorkle's). */
+export type UseId = "chat" | "review";
+
+export interface UseChoice {
+  provider: Provider;
+  /** The model's id, or for "local" the GGUF's file name. */
+  model: string;
+}
+
 export interface Settings {
   zoteroApiKey: string;
   zoteroLibraryId: string;
   zoteroLibraryType: "user" | "group";
+  uses: Partial<Record<UseId, UseChoice>>;
+  /** Before uses: the one provider and its models. Read to fill `uses` in
+   *  for settings saved then (lib/settings.ts `choiceFor`). */
   provider: Provider;
-  anthropicApiKey: string;
-  openaiApiKey: string;
   anthropicModel: string;
   openaiModel: string;
-  /** File name of the GGUF in the models folder. */
+  /** The keys never come back from the Rust core once saved (these stay
+   *  empty here); `KeyStatus` says which are. */
+  anthropicApiKey: string;
+  openaiApiKey: string;
+  /** The default on-device model (Settings → Offline model): the file name
+   *  of a GGUF in the models folder. Used when the network is gone, and
+   *  first for a use set to On-device. */
   localModel: string;
   effort: "low" | "medium" | "high";
   offlineFallback: boolean;
   localContext: number;
+}
+
+/** Which API keys are saved in the Rust core. */
+export interface KeyStatus {
+  anthropic: boolean;
+  openai: boolean;
 }
 
 export interface Usage {
@@ -71,8 +94,11 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   ts: number;
-  /** The message that opens a conversation (the goal), shown as a card. */
-  kind?: "kickoff";
+  /** "kickoff": the message that opens a conversation (the goal), shown
+   *  as a card. "review": a review of the document (Review button), shown
+   *  as a card; it is the reviewer's, not the guide's, and the guide reads
+   *  it as something the writer shared (lib/ai/context.ts). */
+  kind?: "kickoff" | "review";
   provider?: Provider;
   model?: string;
   usage?: Usage;

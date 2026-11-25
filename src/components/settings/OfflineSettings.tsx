@@ -117,7 +117,7 @@ export function OfflineSettings({ draft, set }: DraftProps) {
                 <div className="model-name">
                   {m.label}
                   {m.recommended && <span className="badge">Recommended</span>}
-                  {chosen && <span className="badge on">In use</span>}
+                  {chosen && <span className="badge on">Default</span>}
                 </div>
                 <div className="model-blurb">
                   {m.blurb}
@@ -138,7 +138,7 @@ export function OfflineSettings({ draft, set }: DraftProps) {
                   <>
                     {!chosen && (
                       <button className="btn small primary" onClick={() => set("localModel", m.file)}>
-                        Use
+                        Make default
                       </button>
                     )}
                     <button className="btn small" onClick={() => void remove(m.file)}>

@@ -2,7 +2,7 @@
 // documents and settings in localStorage, PDFs in memory, and a scripted
 // guide in place of a model. It exists so the UI can be developed and
 // tested without the native shell; inside the app it is never called.
-import type { DocSummary, Settings, StreamEvent } from "./types";
+import type { DocSummary, KeyStatus, Settings, StreamEvent } from "./types";
 
 const LS = "nudge-browser-";
 const files = new Map<string, ArrayBuffer>();
@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS: Settings = {
   zoteroApiKey: "",
   zoteroLibraryId: "",
   zoteroLibraryType: "user",
+  uses: {},
   provider: "local",
   anthropicApiKey: "",
   openaiApiKey: "",
@@ -56,9 +57,32 @@ export async function browserInvoke<T>(cmd: string, args: Record<string, unknown
   const docs = read<Record<string, Record<string, unknown>>>("docs", {});
   switch (cmd) {
     case "load_settings":
-      return { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>("settings", {}) } as T;
-    case "save_settings":
-      write("settings", a.settings);
+      return { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>("settings", {}), anthropicApiKey: "", openaiApiKey: "" } as T;
+    case "save_settings": {
+      // Keys stay where ai_set_key put them, as in the app.
+      const keys = read<Partial<Settings>>("settings", {});
+      write("settings", { ...(a.settings as Settings), anthropicApiKey: keys.anthropicApiKey ?? "", openaiApiKey: keys.openaiApiKey ?? "" });
+      return undefined as T;
+    }
+    case "ai_status": {
+      const st = read<Partial<Settings>>("settings", {});
+      return { anthropic: Boolean(st.anthropicApiKey), openai: Boolean(st.openaiApiKey) } as T;
+    }
+    case "ai_set_key":
+    case "ai_delete_key": {
+      const st = read<Partial<Settings>>("settings", {});
+      const field = a.provider === "openai" ? "openaiApiKey" : "anthropicApiKey";
+      write("settings", { ...st, [field]: cmd === "ai_set_key" ? String(a.key ?? "").trim() : "" });
+      const next = read<Partial<Settings>>("settings", {});
+      return { anthropic: Boolean(next.anthropicApiKey), openai: Boolean(next.openaiApiKey) } satisfies KeyStatus as T;
+    }
+    case "usage_add":
+      write("usage", [...read<unknown[]>("usage", []), a.event]);
+      return undefined as T;
+    case "usage_list":
+      return read("usage", []) as T;
+    case "usage_reset":
+      write("usage", []);
       return undefined as T;
     case "list_documents":
       return Object.values(docs)
@@ -119,6 +143,13 @@ const SCRIPT = [
   "Good — that example could open the piece. Try dragging your last answer into the document and we'll build from it. What's the claim you want that example to support?",
 ];
 
+const REVIEW_SCRIPT = `The draft names its reader clearly, but the claim it wants that reader to accept isn't stated yet, and nothing yet shows peer review at work in a class.
+
+1. **The opening** — “It is for the hiring committee…” says who the piece is for, not what it argues. Consider what you want the committee to believe after reading.
+2. **Evidence** — the goal promises a reflection on practice; the draft has no moment from a seminar. A single concrete episode would carry more than a general statement.
+3. **What's working** — “read their own drafts as outsiders would” is a clear, memorable idea worth keeping as the spine of the piece.
+4. **Length** — at this point the draft is far short of 1,500 words; the sections the goal implies (method, an example, what you've learned) are still to come.`;
+
 export async function browserStream(cmd: string, args: Record<string, unknown>, onEvent: (e: unknown) => void): Promise<void> {
   if (cmd !== "ai_chat") throw new Error(`“${cmd}” is only available in the app`);
   stopped = false;
@@ -128,7 +159,10 @@ export async function browserStream(cmd: string, args: Record<string, unknown>, 
   const m = /\[\[page (\d+)\]\]\n([^\n]{20,})/.exec(req.system);
   const quote = m ? m[2].split(/\s+/).slice(0, 9).join(" ") : "";
   const cite = quote ? ` Your first source puts it this way: [[cite:1:${m![1]}:${quote}]] — does that match your experience?` : "";
-  const text = `${SCRIPT[turn % SCRIPT.length]}${turn === 0 ? cite : ""}\n\n_(This is a scripted reply: the browser preview has no model.)_`;
+  const reviewing = req.system.startsWith("You review");
+  const text = reviewing
+    ? `${REVIEW_SCRIPT}\n\n_(This is a scripted review: the browser preview has no model.)_`
+    : `${SCRIPT[turn % SCRIPT.length]}${turn === 0 ? cite : ""}\n\n_(This is a scripted reply: the browser preview has no model.)_`;
   const send = (e: StreamEvent) => onEvent(e);
   send({ type: "status", message: "Thinking…" });
   await new Promise((r) => setTimeout(r, 300));
@@ -139,7 +173,7 @@ export async function browserStream(cmd: string, args: Record<string, unknown>, 
   }
   send({
     type: "done",
-    usage: { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0 },
+    usage: { inputTokens: 1200, outputTokens: text.length >> 2, cachedInputTokens: 0, cacheWriteTokens: 0 },
     model: "preview",
     stop: stopped ? "stopped" : "end_turn",
   });

@@ -99,6 +99,21 @@ export const ArrowIntoIcon = ({ size }: P) => (
   </Svg>
 );
 
+export const TargetIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <circle cx="12" cy="12" r="7" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </Svg>
+);
+
+export const ReviewIcon = ({ size }: P) => (
+  <Svg size={size}>
+    <path d="M9 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+    <path d="m9 12 2.5 2.5L20 6" />
+  </Svg>
+);
+
 export const GripIcon = ({ size }: P) => (
   <Svg size={size}>
     <circle cx="9" cy="6" r="1" fill="currentColor" />

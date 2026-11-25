@@ -52,7 +52,7 @@
 .msg-grip { flex: none; color: var(--border-strong); cursor: grab; padding: 2px 2px; border-radius: 5px; display: inline-flex; -webkit-user-drag: element; }
 .msg-grip:hover { color: var(--accent); background: var(--accent-soft); }
 .msg-grip:active { cursor: grabbing; }
-.msg-text { white-space: pre-wrap; line-height: 1.5; font-size: 15px; font-family: "iA Writer Quattro", Georgia, serif; overflow-wrap: anywhere; }
+.msg-text { white-space: pre-wrap; line-height: 1.5; font-size: var(--chat-font-size, 15px); font-family: "iA Writer Quattro", Georgia, serif; overflow-wrap: anywhere; }
 .msg-tools { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 3px; opacity: 0; transition: opacity 0.15s; min-height: 24px; }
 .msg:hover .msg-tools { opacity: 1; }
 @media (pointer: coarse) { .msg-tools { opacity: 1; } }
@@ -62,7 +62,7 @@
 .msg-model { font-size: 11px; color: var(--muted); margin-right: 2px; }
 
 .msg-guide { align-self: flex-start; padding: 0 4px; max-width: 94%; }
-.msg-md { line-height: 1.6; font-size: 14.5px; color: var(--fg); overflow-wrap: anywhere; }
+.msg-md { line-height: 1.6; font-size: calc(var(--chat-font-size, 15px) * 0.97); color: var(--fg); overflow-wrap: anywhere; }
 .msg-md > :first-child { margin-top: 0; }
 .msg-md > :last-child { margin-bottom: 0; }
 .msg-md p { margin: 0 0 0.7em; }
@@ -89,10 +89,20 @@
 
 .composer { display: flex; align-items: flex-end; gap: 6px; margin: 0 12px 6px; padding: 6px 6px 6px 4px; border: 1px solid var(--border-strong); border-radius: 16px; background: var(--bg-raised); position: relative; }
 .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.composer textarea { flex: 1; border: none; outline: none; background: none; resize: none; padding: 6px 4px; line-height: 1.45; font-size: 15px; max-height: 240px; font-family: "iA Writer Quattro", Georgia, serif; }
+.composer textarea { flex: 1; border: none; outline: none; background: none; resize: none; padding: 6px 4px; line-height: 1.45; font-size: var(--chat-font-size, 15px); max-height: 240px; font-family: "iA Writer Quattro", Georgia, serif; }
 .attach-menu { position: relative; }
 .send-btn { flex: none; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--accent); color: var(--accent-fg); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .send-btn:disabled { opacity: 0.35; cursor: default; }
 .send-btn.stop { background: var(--fg); color: var(--bg); }
 .chat-foot { display: flex; gap: 10px; justify-content: center; font-size: 11px; color: var(--muted); padding: 0 12px 8px; }
 .ipados .chat-foot { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+
+/* A review of the document (Review button): the reviewer's, set apart from
+   the guide's turns, each point with Work on this. */
+.msg-review { align-self: stretch; max-width: 100%; padding: 12px 14px; border: 1px solid var(--border-strong); border-left: 3px solid var(--accent); border-radius: 10px; background: var(--bg-raised); }
+.review-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.msg-review li { margin-bottom: 0.45em; }
+.take-up { margin-left: 8px; border: 1px solid var(--border-strong); background: none; border-radius: 999px; padding: 0 8px; height: 20px; font-size: 11px; color: var(--fg-soft); cursor: pointer; vertical-align: 1px; opacity: 0; transition: opacity 0.15s; }
+.msg-review li:hover .take-up, .take-up:focus { opacity: 1; }
+@media (pointer: coarse) { .take-up { opacity: 1; } }
+.take-up:hover { border-color: var(--accent); color: var(--accent); }

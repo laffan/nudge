@@ -5,13 +5,24 @@
 // persisted in localStorage and never written to a document.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DocSummary, NudgeDoc, Settings, ViewerTarget } from "./types";
+import type { DocSummary, KeyStatus, NudgeDoc, Settings, ViewerTarget } from "./types";
 
 export interface Streaming {
   docId: string;
   requestId: string;
   text: string;
   status: string;
+  /** A guide's reply, or a review of the document (Review button). */
+  kind: "reply" | "review";
+}
+
+/** A message of the writer's, to show where in the document it fits
+ *  (Suggest placement): "preview" scrolls there and flashes the sentence;
+ *  "place" also puts the caret after it. */
+export interface PlacementRequest {
+  text: string;
+  mode: "preview" | "place";
+  nonce: number;
 }
 
 export interface Toast {
@@ -20,10 +31,11 @@ export interface Toast {
   kind: "info" | "error";
 }
 
-export type SettingsTab = "ai" | "offline" | "zotero" | "editor" | "shortcuts";
+export type SettingsTab = "ai" | "offline" | "zotero" | "appearance" | "editor" | "chat" | "shortcuts";
 
 interface AppState {
   settings: Settings | null;
+  keys: KeyStatus;
   docs: DocSummary[];
   current: NudgeDoc | null;
   loadingDoc: boolean;
@@ -35,8 +47,12 @@ interface AppState {
   toasts: Toast[];
   /** Characters to put into the document at its caret (bumped to repeat). */
   insertRequest: { text: string; nonce: number } | null;
+  placementRequest: PlacementRequest | null;
+  /** Text to put in the composer, for the writer to edit and send. */
+  composerPrefill: { text: string; nonce: number } | null;
 
   setSettings: (s: Settings) => void;
+  setKeys: (k: KeyStatus) => void;
   setDocs: (d: DocSummary[]) => void;
   setCurrent: (d: NudgeDoc | null) => void;
   patchCurrent: (fn: (d: NudgeDoc) => NudgeDoc) => void;
@@ -50,12 +66,15 @@ interface AppState {
   toast: (text: string, kind?: "info" | "error") => void;
   dismissToast: (id: number) => void;
   insertIntoDocument: (text: string) => void;
+  suggestPlacement: (text: string, mode: PlacementRequest["mode"]) => void;
+  prefillComposer: (text: string) => void;
 }
 
 let toastId = 0;
 
 export const useApp = create<AppState>((set, get) => ({
   settings: null,
+  keys: { anthropic: false, openai: false },
   docs: [],
   current: null,
   loadingDoc: false,
@@ -65,8 +84,11 @@ export const useApp = create<AppState>((set, get) => ({
   zoteroPicker: false,
   toasts: [],
   insertRequest: null,
+  placementRequest: null,
+  composerPrefill: null,
 
   setSettings: (settings) => set({ settings }),
+  setKeys: (keys) => set({ keys }),
   setDocs: (docs) => set({ docs }),
   setCurrent: (current) => set({ current }),
   patchCurrent: (fn) => {
@@ -88,6 +110,8 @@ export const useApp = create<AppState>((set, get) => ({
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   insertIntoDocument: (text) => set({ insertRequest: { text, nonce: Date.now() + Math.random() } }),
+  suggestPlacement: (text, mode) => set({ placementRequest: { text, mode, nonce: Date.now() + Math.random() } }),
+  prefillComposer: (text) => set({ composerPrefill: { text, nonce: Date.now() + Math.random() } }),
 }));
 
 export type Theme = "system" | "light" | "dark";
@@ -107,6 +131,11 @@ export interface Prefs {
   focusMode: boolean;
   typewriter: boolean;
   showWordCount: boolean;
+  spellcheck: boolean;
+  /** Text size of the conversation, in px. */
+  chatFontSize: number;
+  /** Underline what the guide asks (lib/ai/questions.ts). */
+  underlineQuestions: boolean;
   /** Shortcut id → binding, for the ones rebound in Settings. */
   shortcuts: Record<string, string>;
   set: <K extends keyof Prefs>(key: K, value: Prefs[K]) => void;
@@ -127,6 +156,9 @@ export const usePrefs = create<Prefs>()(
       focusMode: false,
       typewriter: false,
       showWordCount: true,
+      spellcheck: true,
+      chatFontSize: 15,
+      underlineQuestions: true,
       shortcuts: {},
       set: (key, value) => set({ [key]: value } as Partial<Prefs>),
     }),

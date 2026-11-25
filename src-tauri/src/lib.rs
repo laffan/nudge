@@ -10,6 +10,7 @@ mod ios;
 mod settings;
 mod state;
 mod storage;
+mod usage;
 mod zotero;
 
 pub use error::{Error, Result};
@@ -23,22 +24,69 @@ use tauri::{Manager, State};
 
 #[tauri::command]
 async fn load_settings(state: State<'_, AppState>) -> Result<settings::Settings> {
-    Ok(state.settings.read().await.clone())
+    Ok(state.settings.read().await.without_keys())
 }
 
+/// Everything but the API keys, which only `ai_set_key` and
+/// `ai_delete_key` change (the frontend never holds them).
 #[tauri::command]
 async fn save_settings(state: State<'_, AppState>, settings: settings::Settings) -> Result<()> {
-    settings::save(&state.data_dir, &settings)?;
+    let mut next = settings;
     let model_changed = {
         let cur = state.settings.read().await;
-        cur.local_model != settings.local_model || (cur.provider == "local") != (settings.provider == "local")
+        next.anthropic_api_key = cur.anthropic_api_key.clone();
+        next.openai_api_key = cur.openai_api_key.clone();
+        cur.local_model != next.local_model || cur.uses != next.uses
     };
-    *state.settings.write().await = settings;
+    settings::save(&state.data_dir, &next)?;
+    *state.settings.write().await = next;
     if model_changed {
         // Free the old model's memory now rather than at the next turn.
         state.local.unload();
     }
     Ok(())
+}
+
+#[derive(serde::Serialize)]
+struct KeyStatus {
+    anthropic: bool,
+    openai: bool,
+}
+
+async fn key_status(state: &AppState) -> KeyStatus {
+    let s = state.settings.read().await;
+    KeyStatus { anthropic: !s.anthropic_api_key.trim().is_empty(), openai: !s.openai_api_key.trim().is_empty() }
+}
+
+/// Which API keys are saved (not the keys themselves).
+#[tauri::command]
+async fn ai_status(state: State<'_, AppState>) -> Result<KeyStatus> {
+    Ok(key_status(&state).await)
+}
+
+async fn set_key(state: &AppState, provider: &str, key: &str) -> Result<()> {
+    let mut s = state.settings.write().await;
+    match provider {
+        "anthropic" => s.anthropic_api_key = key.trim().to_string(),
+        "openai" => s.openai_api_key = key.trim().to_string(),
+        other => return Err(Error::msg(format!("Unknown provider “{other}”"))),
+    }
+    settings::save(&state.data_dir, &s)
+}
+
+#[tauri::command]
+async fn ai_set_key(state: State<'_, AppState>, provider: String, key: String) -> Result<KeyStatus> {
+    if key.trim().is_empty() {
+        return Err(Error::msg("Paste a key first"));
+    }
+    set_key(&state, &provider, &key).await?;
+    Ok(key_status(&state).await)
+}
+
+#[tauri::command]
+async fn ai_delete_key(state: State<'_, AppState>, provider: String) -> Result<KeyStatus> {
+    set_key(&state, &provider, "").await?;
+    Ok(key_status(&state).await)
 }
 
 // ---------------------------------------------------------------- documents
@@ -206,6 +254,21 @@ fn local_delete(state: State<'_, AppState>, file: String) -> Result<()> {
 }
 
 #[tauri::command]
+fn usage_add(state: State<'_, AppState>, event: Value) -> Result<()> {
+    usage::add(&state.data_dir, event)
+}
+
+#[tauri::command]
+fn usage_list(state: State<'_, AppState>) -> Vec<Value> {
+    usage::list(&state.data_dir)
+}
+
+#[tauri::command]
+fn usage_reset(state: State<'_, AppState>) -> Result<()> {
+    usage::reset(&state.data_dir)
+}
+
+#[tauri::command]
 fn local_unload(state: State<'_, AppState>) {
     state.local.unload();
 }
@@ -254,6 +317,12 @@ pub fn run() {
             ai_chat,
             ai_cancel,
             ai_list_models,
+            ai_status,
+            ai_set_key,
+            ai_delete_key,
+            usage_add,
+            usage_list,
+            usage_reset,
             local_status,
             local_download,
             local_delete,

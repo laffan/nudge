@@ -12,7 +12,7 @@
 import type { ChatMessage, NudgeDoc, Source, ZoteroAnnotation } from "../types";
 import { sourcePages } from "../sources";
 import { markedText } from "../pdf/text";
-import { CITATIONS, GUIDE } from "./prompts";
+import { CITATIONS, GUIDE, REVIEW_SHARED, REVIEWER } from "./prompts";
 import { retrieve } from "./retrieval";
 
 /** Rough characters per token for English prose. */
@@ -73,8 +73,56 @@ function withContext(message: string, context: string): string {
   return `${context}\n\n${message}`;
 }
 
+/** The conversation as the guide reads it. A review is the reviewer's,
+ *  not the guide's: it is passed on as something the writer shared. */
 function asTurns(messages: ChatMessage[]): Built["messages"] {
-  return messages.map((m) => ({ role: m.role, content: m.content }));
+  return messages.map((m) =>
+    m.kind === "review" ? { role: "user", content: `${REVIEW_SHARED}\n\n${m.content}` } : { role: m.role, content: m.content },
+  );
+}
+
+/** A review of the document against the goal. Online, the sources go in
+ *  whole; on the device, the passages that bear on the document. */
+export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTokens: number } | null): Promise<Built> {
+  const ready = doc.sources.filter((s) => s.status === "ready");
+  const anyText = ready.some((s) => s.hasFile && (s.chars ?? 0) > 0);
+  const parts: string[] = [];
+  let docChars = 60_000;
+  let passageBlock = "";
+  if (!local) {
+    const budget = Math.max(60_000, Math.floor(400_000 / Math.max(1, ready.length)));
+    for (const s of ready) {
+      let body = "";
+      if (s.hasFile) {
+        const { text, truncated } = markedText(await sourcePages(s.id), Math.min(150_000, budget));
+        body = text ? `\n\n${text}${truncated ? "\n\n[… the rest of this source is not included …]" : ""}` : "";
+      }
+      parts.push(sourceHead(s, doc.sources.indexOf(s) + 1, 20_000) + body);
+    }
+  } else {
+    const budget = Math.max(2000, (local.nCtx - local.replyTokens - 200) * CPT);
+    for (const s of ready) parts.push(sourceHead(s, doc.sources.indexOf(s) + 1, Math.floor((budget * 0.1) / Math.max(1, ready.length))));
+    docChars = Math.floor(budget * 0.45);
+    const passages = anyText ? await retrieve(ready, `${doc.goal} ${doc.content}`.slice(0, 4000), Math.floor(budget * 0.25)) : [];
+    if (passages.length) {
+      passageBlock =
+        "\n\n<passages>\nPassages from the sources that may bear on the draft:\n" +
+        passages.map((p) => `Source ${p.sourceIndex}, [[page ${p.page}]]\n${p.text}`).join("\n\n") +
+        "\n</passages>";
+    }
+  }
+  const system = [
+    REVIEWER,
+    anyText ? CITATIONS : "",
+    `# The writer's goal\n\n${doc.goal.trim() || "(not stated)"}`,
+    parts.length ? `# Sources\n\n${parts.join("\n\n---\n\n")}` : "# Sources\n\nNo sources are attached.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return {
+    system,
+    messages: [{ role: "user", content: `${documentBlock(doc.content, docChars)}${passageBlock}\n\nReview this draft against the goal.` }],
+  };
 }
 
 /** For Anthropic and OpenAI: whole sources, cached between turns. */

@@ -6,8 +6,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { beginConversation, retryLast, sendMessage, stopReply } from "../../lib/ai/chat";
 import { formatUsd } from "../../lib/ai/models";
 import { updateCurrent } from "../../lib/documents";
-import { providerLabel, providerReady } from "../../lib/settings";
-import { useApp } from "../../lib/store";
+import { providerLabel, choiceFor, readyFor } from "../../lib/settings";
+import { useApp, usePrefs } from "../../lib/store";
 import type { NudgeDoc } from "../../lib/types";
 import { RetryIcon, SendIcon, StopIcon } from "../Icons";
 import { MessageBubble, StreamingBubble } from "./MessageBubble";
@@ -16,7 +16,8 @@ import { AttachMenu, DropZone, SourceChip } from "./Sources";
 function GoalSetup({ doc }: { doc: NudgeDoc }) {
   const [goal, setGoal] = useState(doc.goal);
   const settings = useApp((s) => s.settings);
-  const ready = providerReady(settings);
+  const keys = useApp((s) => s.keys);
+  const ready = readyFor(settings, keys, "chat");
   const openSettings = useApp((s) => s.openSettings);
   const reading = doc.sources.some((s) => s.status === "reading");
   const begin = () => void beginConversation(goal);
@@ -59,7 +60,7 @@ function GoalSetup({ doc }: { doc: NudgeDoc }) {
         {!ready.ok && (
           <span className="goal-warn">
             {ready.why} —{" "}
-            <button className="link" onClick={() => openSettings(settings?.provider === "local" ? "offline" : "ai")}>
+            <button className="link" onClick={() => openSettings(settings && choiceFor(settings, "chat").provider === "local" ? "offline" : "ai")}>
               open Settings
             </button>
           </span>
@@ -113,6 +114,18 @@ function GoalCard({ doc }: { doc: NudgeDoc }) {
 function Composer({ busy }: { busy: boolean }) {
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
+  const prefill = useApp((s) => s.composerPrefill);
+  // "Work on this" on a review's point: the writer's message to edit and send.
+  useEffect(() => {
+    if (!prefill) return;
+    setDraft(prefill.text);
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  }, [prefill]);
   const send = () => {
     const t = draft.trim();
     if (!t || busy) return;
@@ -162,7 +175,8 @@ export function ChatPanel() {
   const streaming = useApp((s) => (s.streaming && s.streaming.docId === s.current?.id ? s.streaming : null));
   const anyStreaming = useApp((s) => Boolean(s.streaming));
   const insert = useApp((s) => s.insertIntoDocument);
-  const provider = useApp((s) => s.settings?.provider);
+  const chatUse = useApp((s) => (s.settings ? choiceFor(s.settings, "chat").provider : null));
+  const fontSize = usePrefs((s) => s.chatFontSize);
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
 
@@ -172,11 +186,12 @@ export function ChatPanel() {
     if (el && stick.current) el.scrollTop = el.scrollHeight;
   }, [messages?.length, streaming?.text, streaming?.status]);
 
-  if (!doc || !messages || !sources) return <section className="chat" />;
+  const style = { "--chat-font-size": `${fontSize}px` } as React.CSSProperties;
+  if (!doc || !messages || !sources) return <section className="chat" style={style} />;
   const begun = messages.length > 0;
   if (!begun) {
     return (
-      <section className="chat">
+      <section className="chat" style={style}>
         <GoalSetup doc={doc} />
       </section>
     );
@@ -184,7 +199,7 @@ export function ChatPanel() {
   const last = messages[messages.length - 1];
   const awaiting = last.role === "user" && !streaming;
   return (
-    <section className="chat">
+    <section className="chat" style={style}>
       <header className="chat-head">
         <GoalCard doc={doc} />
         <div className="source-strip">
@@ -204,7 +219,7 @@ export function ChatPanel() {
         {messages.map((m) =>
           m.kind === "kickoff" ? null : <MessageBubble key={m.id} message={m} sources={sources} onInsert={insert} />,
         )}
-        {streaming && <StreamingBubble text={streaming.text} status={streaming.status} sources={sources} />}
+        {streaming && <StreamingBubble text={streaming.text} status={streaming.status} sources={sources} review={streaming.kind === "review"} />}
         {awaiting && (
           <div className="msg-retry">
             No reply yet.{" "}
@@ -216,7 +231,7 @@ export function ChatPanel() {
       </div>
       <Composer busy={Boolean(streaming)} />
       <div className="chat-foot">
-        {provider && <span>{providerLabel(provider)}</span>}
+        {chatUse && <span>{providerLabel(chatUse)}</span>}
         {doc.costUsd > 0 && <span title="What this conversation has cost">{formatUsd(doc.costUsd)}</span>}
       </div>
     </section>

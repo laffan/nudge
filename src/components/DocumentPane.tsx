@@ -8,8 +8,11 @@ import { countWords, createEditor, exportMarkdown, insertSnippet, type EditorHan
 import { updateCurrent } from "../lib/documents";
 import { toast, useApp, usePrefs } from "../lib/store";
 import { invoke, isTauri } from "../lib/tauri";
+import { findPlacement, showPlacement } from "../editor/placement";
+import { reviewDocument } from "../lib/ai/chat";
+import { readyFor } from "../lib/settings";
 import { copyText } from "./chat/MessageBubble";
-import { CopyIcon, ExportIcon } from "./Icons";
+import { CopyIcon, ExportIcon, ReviewIcon } from "./Icons";
 
 export let activeEditor: EditorHandles | null = null;
 
@@ -41,6 +44,9 @@ export function DocumentPane() {
   const title = useApp((s) => s.current?.title ?? "");
   const content = useApp((s) => s.current?.content ?? "");
   const insertRequest = useApp((s) => s.insertRequest);
+  const placementRequest = useApp((s) => s.placementRequest);
+  const goal = useApp((s) => s.current?.goal ?? "");
+  const busy = useApp((s) => Boolean(s.streaming));
   const prefs = usePrefs();
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorHandles | null>(null);
@@ -62,7 +68,12 @@ export function DocumentPane() {
         if (wordTimer) clearTimeout(wordTimer);
         wordTimer = setTimeout(() => setWords(countWords(text)), 250);
       },
-      { shortcuts: usePrefs.getState().shortcuts, focus: usePrefs.getState().focusMode, typewriter: usePrefs.getState().typewriter },
+      {
+        shortcuts: usePrefs.getState().shortcuts,
+        focus: usePrefs.getState().focusMode,
+        typewriter: usePrefs.getState().typewriter,
+        spellcheck: usePrefs.getState().spellcheck,
+      },
     );
     ed.view.contentDOM.addEventListener("focus", () => (focusedOnce.current = true));
     editor.current = ed;
@@ -77,6 +88,31 @@ export function DocumentPane() {
 
   useEffect(() => editor.current?.setShortcuts(prefs.shortcuts), [prefs.shortcuts]);
   useEffect(() => editor.current?.setModes(prefs.focusMode, prefs.typewriter), [prefs.focusMode, prefs.typewriter]);
+  useEffect(() => editor.current?.setSpellcheck(prefs.spellcheck), [prefs.spellcheck]);
+
+  // Suggest placement from the conversation (editor/placement.ts).
+  useEffect(() => {
+    const ed = editor.current;
+    if (!placementRequest || !ed) return;
+    const p = findPlacement(ed.view.state.doc.toString(), placementRequest.text);
+    if (!p) {
+      if (placementRequest.mode === "place") toast("The document is empty — Add to document will start it");
+      return;
+    }
+    showPlacement(ed.view, p, placementRequest.mode === "place");
+    if (placementRequest.mode === "place") focusedOnce.current = true;
+  }, [placementRequest]);
+
+  const review = () => {
+    const app = useApp.getState();
+    const ready = readyFor(app.settings, app.keys, "review");
+    if (!ready.ok) {
+      toast(ready.why ?? "The Review model isn't set up", "error");
+      app.openSettings("ai");
+      return;
+    }
+    void reviewDocument();
+  };
 
   // "Add to document" from the conversation: at the caret if the writer has
   // been in the document, else at its end.
@@ -111,6 +147,20 @@ export function DocumentPane() {
         />
         <div className="doc-head-tools">
           {prefs.showWordCount && <span className="word-count">{words.toLocaleString()} words</span>}
+          <button
+            className="btn small review-btn"
+            disabled={busy || !content.trim() || !goal.trim()}
+            title={
+              !goal.trim()
+                ? "Set the document's goal first"
+                : !content.trim()
+                  ? "Write something to review first"
+                  : "Assess the document against its goal; the advice goes into the conversation"
+            }
+            onClick={review}
+          >
+            <ReviewIcon size={14} /> Review
+          </button>
           <button className="icon-btn" title="Copy as Markdown" onClick={() => { copyText(exportMarkdown(content)); toast("Copied as Markdown"); }}>
             <CopyIcon size={15} />
           </button>

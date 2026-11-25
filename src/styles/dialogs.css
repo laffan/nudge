@@ -77,3 +77,31 @@
 @media (max-width: 700px) {
   .zp-collections, .settings-tabs { width: 130px; }
 }
+
+/* Settings → AI, after Snorkle's: a box per service, a row per use. */
+.ai-provider { padding: 14px 0; border-top: 1px solid var(--border); }
+.ai-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ai-title { font-weight: 600; }
+.ai-state { color: var(--muted); font-size: 12px; }
+.ai-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+.ai-row input { flex: 1; min-width: 200px; height: 32px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-raised); outline: none; }
+.ai-row input:focus { border-color: var(--accent); }
+.ai-msg { color: var(--fg-soft); font-size: 12.5px; margin-top: 8px; }
+.ai-uses { display: flex; flex-direction: column; }
+.ai-use { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--border); }
+.ai-use-label { flex: 1 1 200px; min-width: 0; }
+.ai-use-label .hint { margin-top: 2px; font-size: 12px; }
+.ai-use-pickers { display: flex; gap: 8px; flex: 1 1 280px; min-width: 0; }
+.ai-use-pickers select { flex: 1; min-width: 0; height: 32px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-raised); }
+.ai-use-pickers select:first-child:not(:only-child) { flex: 0 0 120px; }
+.ai-usage { padding: 14px 0; border-top: 1px solid var(--border); margin-top: 18px; }
+.btn.armed { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.usage-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.usage-table th, .usage-table td { padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--border); }
+.usage-table th:first-child, .usage-table td:first-child { text-align: left; }
+.usage-table th { font-weight: 600; color: var(--muted); }
+.usage-table tfoot td { font-weight: 700; border-bottom: 0; }
+
+/* Settings → Chat's preview of the conversation at the chosen size. */
+.chat-sample { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin: 4px 0 8px; border-radius: 10px; background: var(--bg-chat); border: 1px solid var(--border); }
+.chat-sample .msg-text { align-self: flex-end; padding: 6px 12px; border-radius: 12px; background: var(--user-bubble); border: 1px solid var(--border); }

@@ -449,12 +449,15 @@ pub async fn stream(
     events: &Channel<ChatEvent>,
     stop: &Arc<AtomicBool>,
 ) -> Result<()> {
+    // The model this use was set to (Settings → AI → Uses), else the
+    // default on-device model (Settings → Offline model).
     let (file, n_ctx) = {
         let s = state.settings.read().await;
-        (s.local_model.clone(), s.local_context.clamp(2048, 131072))
+        let file = if req.model.trim().is_empty() { s.local_model.clone() } else { req.model.trim().to_string() };
+        (file, s.local_context.clamp(2048, 131072))
     };
     if file.trim().is_empty() {
-        return Err(Error::msg("No on-device model is installed — download one in Settings → AI"));
+        return Err(Error::msg("No on-device model is installed — download one in Settings → Offline model"));
     }
     crate::storage::check_file_name(&file)?;
     let path = state.models_dir().join(&file);

@@ -24,6 +24,15 @@ conversation, including page citations that open the PDF at the cited passage.
   be dragged on its own. **Add to document** puts a message at the caret. Copy and
   paste also work. The AI's replies can be copied but not dragged, because the
   document is meant to be yours.
+  - **Suggest placement**, on each of your messages, shows where the message would
+    fit. Hovering it scrolls the document to the sentence the message would follow
+    and lights that sentence briefly. Pressing it also puts the caret there, ready
+    for Add to document.
+  - **Review**, at the top of the document, has a separate reviewer assess the
+    document against its goal. The advice goes into the conversation, where you and
+    the guide can both see it. Each point has **Work on this**, which puts the point
+    in your reply for you to edit and send. Which points to take up is yours to
+    decide; the guide is told not to work through them unasked.
 - **Source viewer** (optional, left of the conversation). Opens when you press a
   source chip or a citation such as **p. 4**. It goes to the cited page and marks the
   quoted passage. Your Zotero highlights are drawn on the pages.
@@ -35,7 +44,17 @@ reads your annotations before the full text.
 
 ## Online and offline
 
-Settings → AI picks who answers:
+Settings → AI follows Snorkle's layout:
+
+- **Authentication.** Anthropic and OpenAI each have a key box with Save, Test and
+  Remove. A saved key is never shown again, and Test lists the models that account
+  can use.
+- **Uses.** Each use of AI has its own service and model:
+  - **Chat**, the guide's side of the conversation;
+  - **Review**, the document's Review button.
+- **Usage.** Tokens and estimated cost, by day.
+
+The services are:
 
 - **On-device (offline)**. A GGUF model run by llama.cpp on the Mac's or iPad's GPU.
   Settings → Offline model downloads one. The recommended model is **Qwen3.5 4B**
@@ -57,8 +76,16 @@ Settings → AI picks who answers:
   model is Claude Opus 5.5. Requests to Opus 5.5, Sonnet 5.5 and Fable 5.x opt into
   Anthropic's server-side refusal fallback.
 
-With **When the online model can't be reached…** switched on (the default), a turn
-that can't reach the network is answered by the on-device model, if one is installed.
+With **When an online model can't be reached…** switched on (the default), a request
+that can't reach the network is answered by the default on-device model, if one is
+installed.
+
+The rest of Settings:
+
+- **Appearance:** theme and the document's look.
+- **Editor:** writing modes, word count, spelling.
+- **Chat:** the conversation's text size, and whether the guide's questions are
+  underlined.
 
 ## Build
 

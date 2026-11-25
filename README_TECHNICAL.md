@@ -47,17 +47,22 @@ src/
                      "Add to document"; the guide's as Markdown, citations as pills,
                      its questions underlined (lib/ai/questions.ts)
     chat/Sources     source chips, the attach menu, the goal screen's drop zone
-    DocumentPane     the editor's column: title, word count, copy / export
+    DocumentPane     the editor's column: title, word count, Review, copy / export;
+                     Suggest placement's requests carried out
     PdfViewer        the source viewer: lazy pages, text layer, Zotero highlights,
                      a citation's passage found and marked
     ZoteroPicker     collections + search, tick works, attach
-    settings/        SettingsDialog (tabs; draft + Save for the Rust-side settings),
-                     AiSettings, OfflineSettings, ZoteroSettings, EditorSettings,
-                     ShortcutSettings
+    settings/        SettingsDialog (tabs: Offline model and Zotero edit a draft
+                     saved with Save; the rest apply as they change), AiSettings
+                     (after Snorkle's: Authentication, Uses, Usage),
+                     OfflineSettings, ZoteroSettings, AppearanceSettings,
+                     EditorSettings, ChatSettings, ShortcutSettings
   editor/
     editor.ts        the CodeMirror setup; snippet drops; word count; export
     shortcuts.ts     every shortcut: id, default binding (Hush's), command
     modes.ts         focus mode and typewriter mode
+    placement.ts     Suggest placement: the sentence a message would follow, and
+                     its brief light
     *.js             ported unchanged from Hush (same author): sentence-core,
                      sentence-navigator, sentence-delete, sentence-parenthetical,
                      word-shift, formatting, move-line, join-lines,
@@ -71,7 +76,9 @@ src/
     tauri.ts         invoke / invokeStreaming: Tauri inside the app,
                      browserBackend.ts in a plain browser
     documents.ts     create / open / save (coalesced) / delete / rename
-    settings.ts      load / save the Rust-side settings; is the provider ready?
+    settings.ts      load / save the Rust-side settings; each use's service and
+                     model (`choiceFor`, with settings from before uses read in);
+                     is a use ready (`readyFor`)?
     sources.ts       attach PDFs and Zotero works; their text, page by page
     zotero.ts        Zotero items → titles, creators, annotations, notes
     pdf/             pdfjs.ts (loader, assets), text.ts (extraction with page markers),
@@ -79,7 +86,8 @@ src/
                      unchanged)
     ai/              prompts.ts (the guide's instructions), context.ts (building a
                      request), retrieval.ts (BM25 passages for the on-device model),
-                     chat.ts (turns, streaming, offline fallback), citations.ts
+                     chat.ts (turns and reviews, streaming, offline fallback),
+                     usage.ts (the usage log, by day), citations.ts
                      (Zotero Helper's parser), models.ts (online catalog and prices),
                      localModels.ts (the offline catalog and why), questions.ts
                      (the sentences of a reply that ask something, underlined)
@@ -88,7 +96,9 @@ src-tauri/src/
   ios.rs             iPad only: the status bar hidden (tao's view controller); the
                      hardware keyboard handed to the page (after Hush)
   state.rs           data dir, HTTP client, settings, stop flags, the local engine
-  settings.rs        keys, Zotero library, provider and models (settings.json)
+  settings.rs        keys, Zotero library, uses, the on-device model (settings.json);
+                     the keys never go back to the frontend (`without_keys`)
+  usage.rs           the AI usage log (usage.json)
   storage.rs         documents/<id>.json + index.json; sources/<id>.pdf + .text.json
   zotero.rs          Web API v3, read-only: verify, collections, search, children,
                      annotations, file
@@ -103,8 +113,9 @@ src-tauri/src/
 
 ## A turn, end to end
 
-1. `lib/ai/chat.ts` decides who answers. It uses the provider from settings, or the
-   on-device model when the browser reports no network and fallback is on. It also
+1. `lib/ai/chat.ts` decides who answers. It uses the service and model of the use
+   (Chat for a turn, Review for a review; Settings → AI → Uses). It switches to the
+   default on-device model when the browser reports no network and fallback is on. It also
    falls back to the on-device model when an online request fails with the `OFFLINE:`
    marker that `src-tauri/src/ai/` puts on connection errors.
 2. `lib/ai/context.ts` builds the request:
@@ -125,7 +136,46 @@ src-tauri/src/
    ("Thinking…", "Loading the on-device model…"), `delta` and `done` (usage, model,
    stop reason) events, and the reply grows in `useApp.streaming`.
 4. On `done`, the reply is appended to the document it was asked in, even if
-   another document is open by then, and its cost is added to the document's total.
+   another document is open by then. Its cost is added to the document's total and
+   the request to the usage log.
+
+A **review** is the same path with the Review use. `buildReview` gives the reviewer
+(`REVIEWER` in prompts.ts) the goal, the sources and the document, not the
+conversation. Its reply goes into the conversation as an assistant message of kind
+"review", shown as a card with **Work on this** on each point; that puts the point in
+the composer. In the guide's history a review is passed on as something the writer
+shared (`REVIEW_SHARED`, role user), so the guide doesn't take the advice as its own.
+Its instructions tell it to leave the choosing of points to the writer.
+
+## Settings → AI
+
+The layout is lifted from Snorkle's `ui/chrome/settings.js`:
+
+- **Authentication.** A box per service: Save (`ai_set_key`), Test (lists the
+  account's models into localStorage, `nudge-ai-models.<service>`), Remove
+  (`ai_delete_key`). The keys live in `settings.json`, where Snorkle uses the
+  Keychain. `load_settings` never returns them and `save_settings` never overwrites
+  them; `ai_status` says which are saved.
+- **Uses.** Chat and Review, each a service and a model (`Settings.uses`). The
+  services are On-device (when a model is downloaded), Anthropic and OpenAI (when
+  keyed). The models come from Test, or the price table before Test; for On-device,
+  the downloaded GGUFs. The Rust core runs the on-device model the request names, or
+  else the default (`local_model`).
+- **Usage.** `usage_add` / `usage_list` / `usage_reset`, totalled by local day in
+  `lib/ai/usage.ts`. A model the price table doesn't know makes the total "≥".
+
+## Suggest placement
+
+`editor/placement.ts` works without a model, at once and offline. Each sentence of the
+document is scored by the words it shares with the message (TF-IDF over the
+document's sentences, stop words left out, light stemming). Its neighbours in the
+same paragraph add to its score, so the paragraph about the same thing wins over a
+stray match. With nothing in common, the end of the document is suggested.
+
+- **Hovering** "Suggest placement" (`mode: "preview"`) scrolls there and lights the
+  sentence for 1.8 s.
+- **Pressing** it (`mode: "place"`) also puts the caret after the sentence, so Add to
+  document inserts there.
 
 ## The guide's instructions
 
@@ -195,6 +245,7 @@ NUDGE_SMOKE_URL=https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qw
 The app's data folder holds:
 
 - `settings.json`
+- `usage.json` (the newest 5,000 AI requests: when, service, model, tokens, cost)
 - `documents/<id>.json` (one document, whole)
 - `documents/index.json` (the list; rebuilt if missing)
 - `sources/<id>.pdf` and `sources/<id>.text.json` (pages of text)
@@ -204,8 +255,9 @@ Ids and model file names are checked before they become paths. Writes of a docum
 go through a temp file and a rename. Saves are coalesced, about 0.7 seconds after the
 last change, and flushed when another document opens or the app is put away.
 
-Device preferences (column widths, editor look, modes, rebound shortcuts, custom
-model URLs) live in localStorage (`nudge-prefs`, `nudge-custom-models`).
+Device preferences (column widths, the look, the modes, spelling, the chat's text
+size, rebound shortcuts, custom model URLs, Test's model lists) live in localStorage
+(`nudge-prefs`, `nudge-custom-models`, `nudge-ai-models.<service>`).
 
 ## Browser preview
 

@@ -15,6 +15,7 @@ import { moveLineKeymap } from "./move-line.js";
 import { wrapOnSelection } from "./wrap-on-selection.js";
 import { instanceHighlightField } from "./select-instance-highlight.js";
 import { focusMode, typewriterMode } from "./modes";
+import { placementFlash } from "./placement";
 import { SHORTCUTS, bindingOf } from "./shortcuts";
 import { toCodeMirrorKey } from "./shortcuts-core.js";
 
@@ -112,15 +113,24 @@ export interface EditorHandles {
   view: EditorView;
   setShortcuts: (o: Record<string, string>) => void;
   setModes: (focus: boolean, typewriter: boolean) => void;
+  setSpellcheck: (on: boolean) => void;
 }
+
+const textAttributes = (spellcheck: boolean) =>
+  EditorView.contentAttributes.of({
+    spellcheck: spellcheck ? "true" : "false",
+    autocorrect: spellcheck ? "on" : "off",
+    autocapitalize: "sentences",
+  });
 
 export function createEditor(
   parent: HTMLElement,
   content: string,
   onChange: (text: string) => void,
-  opts: { shortcuts: Record<string, string>; focus: boolean; typewriter: boolean },
+  opts: { shortcuts: Record<string, string>; focus: boolean; typewriter: boolean; spellcheck: boolean },
 ): EditorHandles {
   const keys = new Compartment();
+  const spelling = new Compartment();
   const focus = new Compartment();
   const typewriter = new Compartment();
   const view = new EditorView({
@@ -149,7 +159,8 @@ export function createEditor(
         EditorView.updateListener.of((u) => {
           if (u.docChanged) onChange(u.state.doc.toString());
         }),
-        EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
+        spelling.of(textAttributes(opts.spellcheck)),
+        placementFlash,
       ],
     }),
   });
@@ -160,6 +171,7 @@ export function createEditor(
       view.dispatch({
         effects: [focus.reconfigure(f ? focusMode : []), typewriter.reconfigure(t ? typewriterMode : [])],
       }),
+    setSpellcheck: (on) => view.dispatch({ effects: spelling.reconfigure(textAttributes(on)) }),
   };
 }
 
