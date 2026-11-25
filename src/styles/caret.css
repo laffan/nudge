@@ -1,0 +1,59 @@
+/* The document's caret (editor/caret.ts), after Hush's cursor modes, and
+   the same caret drawn as a sample in Settings → Appearance
+   (`.caret-sample`, `.caret-demo`). The column carries the shape and
+   animation as classes and the colour as `--caret`. The selectors run
+   through `.cm-editor` so they outrank CodeMirror's own theme. */
+.doc-editor, .caret-sample { --caret: var(--caret-accent); }
+.doc-editor .cm-content { caret-color: var(--caret); }
+.doc-editor .cm-editor .cm-cursor, .caret-demo { border-left: 2px solid var(--caret); }
+.doc-editor .cm-dropCursor { border-left: 2px solid var(--caret); }
+
+/* A heavier line, in fixed pixels, that overhangs the line box by 2px at
+   each end: padding grows the height CodeMirror writes inline, and the
+   margin takes it back up so it grows evenly. */
+:is(.doc-editor, .caret-sample).caret-thick :is(.cm-editor .cm-cursor, .caret-demo) {
+  border-left-width: 3px; box-sizing: content-box; padding-block: 2px; margin-top: -2px;
+}
+/* A block the width of a letter; the em is the document's type size, so it
+   scales with it. */
+:is(.doc-editor, .caret-sample).caret-block :is(.cm-editor .cm-cursor, .caret-demo) {
+  border-left: none; background: var(--caret); opacity: 0.85; width: 0.6em !important;
+}
+/* A strip under the letter, at the foot of the line box, clear of
+   descenders. */
+:is(.doc-editor, .caret-sample).caret-underline :is(.cm-editor .cm-cursor, .caret-demo) {
+  border-left: none; border-bottom: 0.18em solid var(--caret); background: transparent; opacity: 0.75; width: 0.6em !important;
+}
+
+/* Animation. Blink is CodeMirror's own. None holds the caret steady.
+   Pulse swells between a fifth and full opacity; CodeMirror restarts its
+   blink on each move by switching the layer's inline animation between
+   cm-blink and cm-blink2, and the second rule follows that switch onto a
+   twin keyframe, so a keystroke restarts the pulse at full strength. */
+.doc-editor.caret-anim-none .cm-editor .cm-cursorLayer { animation: none !important; }
+.doc-editor.caret-anim-pulse .cm-editor.cm-focused .cm-cursorLayer { animation: caret-pulse 2.4s ease-in-out infinite !important; }
+.doc-editor.caret-anim-pulse .cm-editor.cm-focused .cm-cursorLayer[style*="cm-blink2"] { animation-name: caret-pulse-2 !important; }
+@keyframes caret-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes caret-pulse-2 { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+/* At rest: the keyboard is elsewhere. Shown once the writer has placed the
+   caret in this document, faded, grey and still. */
+.doc-editor[data-placed] .cm-editor[data-caret="rest"] > .cm-scroller > .cm-cursorLayer {
+  animation: none !important; opacity: 0.35; filter: grayscale(1); transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.doc-editor[data-placed] .cm-editor[data-caret="rest"] > .cm-scroller > .cm-cursorLayer .cm-cursor { display: block; }
+
+/* The sample in Settings. */
+.caret-sample { display: flex; align-items: center; padding: 14px 16px; margin: 4px 0 14px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); font-family: var(--doc-font, "iA Writer Quattro", Georgia, serif); font-size: 18px; line-height: 1.6; color: var(--fg); }
+.caret-demo { display: inline-block; height: 1.25em; margin-left: 1px; vertical-align: -0.25em; }
+.caret-sample.caret-anim-blink .caret-demo { animation: caret-blink 1.2s steps(1) infinite; }
+.caret-sample.caret-anim-pulse .caret-demo { animation: caret-pulse 2.4s ease-in-out infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--border-strong); background: var(--swatch); cursor: pointer; padding: 0; position: relative; overflow: hidden; }
+.swatch:hover { box-shadow: 0 0 0 1px var(--muted); }
+.swatch.chosen { box-shadow: 0 0 0 2px var(--fg); }
+.swatch.custom { background: conic-gradient(var(--caret-accent), var(--caret-gold), var(--caret-green), var(--caret-blue), var(--caret-violet), var(--caret-accent)); }
+.swatch.custom.chosen { background: var(--swatch); }
+.swatch input { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); opacity: 0; cursor: pointer; }

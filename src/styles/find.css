@@ -1,0 +1,44 @@
+/* Quick find (editor/quick-find.ts): a small bar floating at the top of
+   the document column, in the look of the app's other raised surfaces —
+   the composer's border and focus ring, the menus' shadow. The replace
+   row folds out under a hairline, so it reads as a second step rather than
+   a second search. */
+.doc-editor { position: relative; }
+/* Room above the text for the bar while it's open. */
+.doc-editor[data-finding] .cm-content { padding-top: 52px; }
+.quick-find {
+  position: absolute; z-index: 20; top: 8px; left: 50%; transform: translateX(-50%);
+  width: min(300px, calc(100% - 24px));
+  display: flex; flex-direction: column;
+  padding: 3px 6px 3px 4px; border-radius: 11px;
+  background: var(--bg-raised); border: 1px solid var(--border-strong); box-shadow: var(--shadow);
+  font-family: var(--ui-font); font-size: 13px; color: var(--fg);
+  animation: qf-in 0.12s ease-out;
+}
+.quick-find:focus-within { border-color: var(--accent); box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft); }
+@keyframes qf-in { from { opacity: 0; transform: translate(-50%, -4px); } }
+.qf-row { display: flex; align-items: center; gap: 4px; min-width: 0; height: 28px; }
+.qf-row[hidden] { display: none; }
+.qf-replace { border-top: 1px solid var(--border); padding-left: 24px; height: 32px; }
+.qf-input { flex: 1; min-width: 0; border: none; outline: none; background: none; padding: 0 2px; font: inherit; color: inherit; }
+.qf-input::placeholder { color: var(--muted); }
+.qf-count { flex: none; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding: 0 2px; }
+.qf-count.none { color: var(--danger); }
+.qf-twirl, .qf-close {
+  flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: none; border-radius: 6px; padding: 0; color: var(--muted); cursor: pointer;
+}
+.qf-twirl:hover, .qf-close:hover { background: var(--bg-hover); color: var(--fg); }
+.qf-twirl svg { transform: rotate(-90deg); transition: transform 0.15s; }
+.quick-find.replacing .qf-twirl svg { transform: none; }
+.qf-replace-all {
+  flex: none; height: 22px; padding: 0 9px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: none; color: var(--fg-soft);
+  font: inherit; font-size: 11.5px; cursor: pointer;
+}
+.qf-replace-all:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.qf-replace-all:disabled { opacity: 0.45; cursor: default; }
+
+/* The matches in the document; the current one is also selected. */
+.doc-editor .cm-find-match { background: var(--find-match); border-radius: 2px; }
+.doc-editor .cm-find-current { background: var(--find-current); box-shadow: 0 0 0 1px var(--find-current-ring); }

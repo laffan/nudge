@@ -130,10 +130,23 @@
 .point-tools { display: inline-flex; align-items: center; gap: 10px; margin-left: 8px; vertical-align: 1px; }
 .point-done { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); }
 .point-tools .link { font-size: 11.5px; opacity: 0; }
-.take-up { border: 1px solid var(--border-strong); background: none; border-radius: 999px; padding: 0 9px; height: 21px; font-size: 11.5px; color: var(--fg-soft); cursor: pointer; opacity: 0; transition: opacity 0.15s; }
-.review-points li:hover .take-up, .review-points li:hover .point-tools .link, .take-up:focus, .point-tools .link:focus { opacity: 1; }
-@media (pointer: coarse) { .take-up, .point-tools .link { opacity: 1; } }
-.take-up:hover { border-color: var(--accent); color: var(--accent); }
+/* Work on this in the accent; Ignore beside it in grey. Both show on the
+   point under the pointer (always, on touch). */
+.take-up, .ignore { border: 1px solid var(--border-strong); background: none; border-radius: 999px; padding: 0 9px; height: 21px; font-size: 11.5px; cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s; }
+.take-up { border-color: var(--accent); color: var(--accent); }
+.take-up:hover { background: var(--accent-soft); }
+.ignore { color: var(--muted); }
+.ignore:hover { color: var(--fg-soft); border-color: var(--muted); }
+.point-tools { gap: 6px; }
+.review-points li:hover :is(.take-up, .ignore), .review-points li:hover .point-tools .link, :is(.take-up, .ignore, .point-tools .link):focus { opacity: 1; }
+@media (pointer: coarse) { .take-up, .ignore, .point-tools .link { opacity: 1; } }
+/* An ignored point, folded to its title. */
+.review-points li.ignored { color: var(--muted); font-size: 12.5px; margin-bottom: 0.35em; }
+.review-points li.ignored::marker { color: var(--muted); }
+.point-title { font-weight: 600; }
+.point-ignored { margin-left: 8px; font-size: 11.5px; }
+.revisit { margin-left: 8px; font-size: 11.5px; color: var(--muted); }
+.revisit:hover { color: var(--fg-soft); }
 .review-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); margin-top: 4px; }
 .review-foot .icon-btn { width: 24px; height: 24px; }
 .working-actions { display: flex; gap: 8px; margin-top: 10px; }
@@ -143,6 +156,10 @@
 .earlier-reviews > li:last-child { border-bottom: 0; }
 .earlier-body { padding: 0 8px 10px 28px; }
 .chat-foot .cost { font-variant-numeric: tabular-nums; }
+/* Use Local / Use APIs: the footer's own colour, told apart only by its
+   underline. */
+.foot-switch { border: none; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); }
+.foot-switch:hover { text-decoration-color: currentColor; }
 
 /* A small tip over a message's tool (Suggest placement: "already in your
    document"). */

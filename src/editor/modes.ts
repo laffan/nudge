@@ -48,10 +48,18 @@ export const typewriterMode: Extension = [
   EditorView.updateListener.of((u) => {
     if (!(u.selectionSet || u.docChanged) || !u.view.hasFocus) return;
     const head = u.state.selection.main.head;
-    // Not inside the update cycle: scroll on the next frame.
-    requestAnimationFrame(() => {
+    const center = () => {
       if (u.view.state.selection.main.head !== head) return;
       u.view.dispatch({ effects: EditorView.scrollIntoView(head, { y: "center" }) });
-    });
+    };
+    // A click centres its line once the button is up. Scrolling while it's
+    // still down moves the text under the pointer, and CodeMirror reads the
+    // smallest movement after that as a drag, selecting from the click.
+    if (u.transactions.some((tr) => tr.isUserEvent("select.pointer"))) {
+      document.addEventListener("mouseup", () => requestAnimationFrame(center), { once: true, capture: true });
+      return;
+    }
+    // Not inside the update cycle: scroll on the next frame.
+    requestAnimationFrame(center);
   }),
 ];

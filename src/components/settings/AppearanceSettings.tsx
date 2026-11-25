@@ -1,6 +1,7 @@
-// Settings → Appearance: the theme and the document's look, kept on this
-// device.
+// Settings → Appearance: the theme, the document's look and its caret,
+// kept on this device.
 import { usePrefs, type Theme } from "../../lib/store";
+import { CaretSettings } from "./CaretSettings";
 
 const FONTS = ["iA Writer Quattro", "Georgia", "Charter", "Iowan Old Style", "Palatino", "Helvetica Neue", "Avenir Next"];
 
@@ -39,6 +40,8 @@ export function AppearanceSettings() {
         <span>Text column — {p.columnWidth}px wide at most</span>
         <input type="range" min={480} max={1100} step={20} value={p.columnWidth} onChange={(e) => p.set("columnWidth", Number(e.target.value))} />
       </label>
+      <h3>Caret</h3>
+      <CaretSettings />
     </>
   );
 }

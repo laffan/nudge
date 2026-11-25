@@ -10,17 +10,12 @@
 .doc-editor .cm-editor { flex: 1; height: 100%; background: transparent; }
 .doc-editor .cm-editor.cm-focused { outline: none; }
 .doc-editor .cm-scroller { font-family: var(--doc-font); font-size: var(--doc-font-size); line-height: var(--doc-line-height); padding: 8px 0 30vh; }
-.doc-editor .cm-content { max-width: var(--doc-column); margin: 0 auto; padding: 12px 32px; caret-color: var(--accent); }
+.doc-editor .cm-content { max-width: var(--doc-column); margin: 0 auto; padding: 12px 32px; }
 .doc-editor .cm-line { padding: 0; }
-.doc-editor .cm-cursor { border-left: 2px solid var(--accent); }
 .doc-editor .cm-selectionBackground, .doc-editor .cm-focused .cm-selectionBackground { background: var(--selection) !important; }
 .doc-editor .cm-placeholder { color: var(--muted); font-style: italic; }
-.doc-editor .cm-dropCursor { border-left: 2px solid var(--accent); }
 .cm-unfocused { opacity: 0.3; transition: opacity 0.3s; }
 .cm-typewriter .cm-scroller { padding-top: 40vh; padding-bottom: 50vh; }
-.doc-editor .cm-panels { background: var(--bg-chat); color: var(--fg); border-color: var(--border); font-family: var(--ui-font); font-size: 13px; }
-.doc-editor .cm-panels input, .doc-editor .cm-panels button { font-size: 13px; }
-.doc-editor .cm-searchMatch { background: var(--doc-highlight); }
 .doc-editor .cm-instance-highlight, .doc-editor .cm-selectionMatch { background: var(--accent-soft); }
 
 /* Suggest placement: the sentence a message would follow, lit briefly. */

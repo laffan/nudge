@@ -4,7 +4,7 @@
 // of AI will take.
 import { invoke } from "./tauri";
 import { toast, useApp } from "./store";
-import type { KeyStatus, Provider, Settings, UseChoice, UseId } from "./types";
+import type { KeyStatus, NudgeDoc, Provider, Settings, UseChoice, UseId } from "./types";
 
 export const DEFAULT_MODEL: Record<Exclude<Provider, "local">, string> = {
   anthropic: "claude-opus-5-5",
@@ -53,6 +53,29 @@ export function choiceFor(s: Settings, id: UseId): UseChoice {
 export function modelOf(s: Settings, c: UseChoice): string {
   if (c.model) return c.model;
   return c.provider === "local" ? s.localModel : DEFAULT_MODEL[c.provider];
+}
+
+/** An online service and model to move a conversation to: Chat's own if
+ *  it's online, else Review's, else the first service with a saved key at
+ *  its default model. Null when no key is saved. */
+export function onlineChoice(s: Settings, keys: KeyStatus): UseChoice | null {
+  for (const id of ["chat", "review"] as const) {
+    const c = choiceFor(s, id);
+    if (c.provider !== "local" && keys[c.provider]) return c;
+  }
+  if (keys.anthropic) return { provider: "anthropic", model: "" };
+  if (keys.openai) return { provider: "openai", model: "" };
+  return null;
+}
+
+/** The service and model a document's conversation takes: Settings →
+ *  AI → Chat, unless the writer moved this conversation with Use Local or
+ *  Use APIs (`NudgeDoc.chatService`). */
+export function chatChoice(s: Settings, keys: KeyStatus, doc: Pick<NudgeDoc, "chatService"> | null): UseChoice {
+  const base = choiceFor(s, "chat");
+  if (doc?.chatService === "local" && base.provider !== "local") return { provider: "local", model: "" };
+  if (doc?.chatService === "online" && base.provider === "local") return onlineChoice(s, keys) ?? base;
+  return base;
 }
 
 export function providerLabel(p: Provider): string {

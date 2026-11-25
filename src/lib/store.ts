@@ -6,6 +6,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DocSummary, KeyStatus, NudgeDoc, Settings, ViewerTarget } from "./types";
+import type { CaretAnimation, CaretShape } from "../editor/caret";
 
 export interface Streaming {
   docId: string;
@@ -129,6 +130,11 @@ export interface Prefs {
   editorFont: string;
   /** Widest the document's text column grows, in px. */
   columnWidth: number;
+  /** The caret (Settings → Appearance; editor/caret.ts). The colour is a
+   *  preset's name or a #hex. */
+  caretShape: CaretShape;
+  caretColor: string;
+  caretAnimation: CaretAnimation;
   focusMode: boolean;
   typewriter: boolean;
   showWordCount: boolean;
@@ -154,6 +160,9 @@ export const usePrefs = create<Prefs>()(
       lineHeight: 1.6,
       editorFont: "iA Writer Quattro",
       columnWidth: 720,
+      caretShape: "line",
+      caretColor: "accent",
+      caretAnimation: "blink",
       focusMode: false,
       typewriter: false,
       showWordCount: true,

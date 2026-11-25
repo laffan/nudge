@@ -7,7 +7,7 @@
 // request is answered on the device instead (Settings → AI, "Without a
 // network").
 import { newId, updateCurrent } from "../documents";
-import { modelOf, choiceFor } from "../settings";
+import { chatChoice, choiceFor, modelOf } from "../settings";
 import { invoke, invokeStreaming } from "../tauri";
 import { toast, useApp, type Streaming } from "../store";
 import type { ChatMessage, NudgeDoc, Provider, Review, Settings, StreamEvent, Usage, UseId } from "../types";
@@ -81,7 +81,7 @@ async function run(use: UseId): Promise<void> {
   const doc = app.current;
   if (!settings || !doc || app.streaming) return;
 
-  const choice = choiceFor(settings, use);
+  const choice = use === "chat" ? chatChoice(settings, app.keys, doc) : choiceFor(settings, use);
   let provider: Provider = choice.provider;
   let model = modelOf(settings, choice);
   const canFallBack = settings.offlineFallback && Boolean(settings.localModel);

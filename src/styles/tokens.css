@@ -22,6 +22,18 @@
   --user-bubble: #ffffff;
   --shadow: 0 8px 30px rgba(40, 30, 20, 0.14), 0 1px 3px rgba(40, 30, 20, 0.08);
   --selection: rgba(58, 103, 156, 0.22);
+  /* Quick find's matches (find.css): the accent, light for each match and
+     stronger for the current one. */
+  --find-match: rgba(200, 85, 61, 0.15);
+  --find-current: rgba(200, 85, 61, 0.32);
+  --find-current-ring: rgba(200, 85, 61, 0.55);
+  /* The caret's preset colours (Settings → Appearance → Caret). */
+  --caret-accent: var(--accent);
+  --caret-ink: var(--fg);
+  --caret-blue: #3a679c;
+  --caret-green: #3d8a5c;
+  --caret-violet: #7457b0;
+  --caret-gold: #b9821a;
   color-scheme: light;
 }
 
@@ -46,6 +58,13 @@
     --user-bubble: #262626;
     --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
     --selection: rgba(143, 181, 227, 0.25);
+    --find-match: rgba(224, 118, 95, 0.2);
+    --find-current: rgba(224, 118, 95, 0.42);
+    --find-current-ring: rgba(224, 118, 95, 0.7);
+    --caret-blue: #8fb5e3;
+    --caret-green: #7cc39a;
+    --caret-violet: #b39ce6;
+    --caret-gold: #e3b452;
     color-scheme: dark;
   }
 }
@@ -70,5 +89,12 @@
   --user-bubble: #262626;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   --selection: rgba(143, 181, 227, 0.25);
+  --find-match: rgba(224, 118, 95, 0.2);
+  --find-current: rgba(224, 118, 95, 0.42);
+  --find-current-ring: rgba(224, 118, 95, 0.7);
+  --caret-blue: #8fb5e3;
+  --caret-green: #7cc39a;
+  --caret-violet: #b39ce6;
+  --caret-gold: #e3b452;
   color-scheme: dark;
 }

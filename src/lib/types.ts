@@ -120,6 +120,9 @@ export interface Review {
   /** Its points the writer has marked complete, by position in its list
    *  (lib/ai/reviews.ts). */
   done: number[];
+  /** Its points the writer has chosen to ignore (folded in the list, with
+   *  Revisit), by position. Missing on reviews from before Ignore. */
+  ignored?: number[];
   /** Whether the reviewer was given the attached sources (missing on
    *  reviews from before it could be left out: they were). */
   withSources?: boolean;
@@ -146,6 +149,10 @@ export interface NudgeDoc {
   working: Working | null;
   /** Review with the attached sources (the Review button's menu). */
   reviewSources: boolean;
+  /** Where this document's conversation goes, when the writer has moved it
+   *  with Use Local / Use APIs under the composer; otherwise Settings →
+   *  AI → Chat decides (lib/settings.ts `chatChoice`). */
+  chatService?: "local" | "online";
   sources: Source[];
   costUsd: number;
 }

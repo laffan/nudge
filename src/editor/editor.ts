@@ -8,7 +8,6 @@ import { drawSelection, dropCursor, EditorView, keymap, placeholder } from "@cod
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
-import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { CommentExtension, HighlightExtension, commentMarkTag, commentTag, highlightMarkTag, highlightTag } from "./markdown-extensions.js";
 import { moveLineKeymap } from "./move-line.js";
@@ -16,6 +15,9 @@ import { wrapOnSelection } from "./wrap-on-selection.js";
 import { instanceHighlightField } from "./select-instance-highlight.js";
 import { focusMode, typewriterMode } from "./modes";
 import { placementFlash } from "./placement";
+import { steadyClickFocus } from "./click-focus";
+import { quickFind } from "./quick-find";
+import { caretRest } from "./caret";
 import { SHORTCUTS, bindingOf } from "./shortcuts";
 import { toCodeMirrorKey } from "./shortcuts-core.js";
 
@@ -145,15 +147,17 @@ export function createEditor(
         EditorState.allowMultipleSelections.of(true),
         markdown({ base: markdownLanguage, extensions: [CommentExtension, HighlightExtension] }),
         syntaxHighlighting(markdownStyle),
-        search({ top: true }),
+        quickFind(),
         instanceHighlightField,
         wrapOnSelection,
         snippetDrop,
+        steadyClickFocus,
+        caretRest,
         placeholder("Your document. Write here, or drag your own words across from the conversation."),
         // Hush's shortcuts first, so they win over CodeMirror's defaults
         // where both claim a key (⌘←, ⌘→, ⌘⌫…).
         keys.of(shortcutKeymap(opts.shortcuts)),
-        keymap.of([...baseKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+        keymap.of([...baseKeymap, ...historyKeymap, indentWithTab]),
         focus.of(opts.focus ? focusMode : []),
         typewriter.of(opts.typewriter ? typewriterMode : []),
         EditorView.updateListener.of((u) => {

@@ -7,7 +7,7 @@
 // and can be rebound in Settings → Keyboard shortcuts.
 import { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import { findNext, findPrevious, openSearchPanel } from "@codemirror/search";
+import { openQuickFind, quickFindNext, quickFindPrevious } from "./quick-find";
 import {
   deleteToSentenceEnd,
   insertBreakAfter,
@@ -146,9 +146,9 @@ export const SHORTCUTS: ShortcutDef[] = [
   { id: "blockquote", label: "Blockquote", group: "Formatting", binding: "Mod+.", run: c(toggleBlockquote) },
 
   // Find
-  { id: "find", label: "Find & replace", group: "Find", binding: "Mod+F", run: openSearchPanel },
-  { id: "findNext", label: "Find next", group: "Find", binding: "Mod+G", run: findNext },
-  { id: "findPrev", label: "Find previous", group: "Find", binding: "Mod+Shift+G", run: findPrevious },
+  { id: "find", label: "Find (and replace)", group: "Find", binding: "Mod+F", run: openQuickFind },
+  { id: "findNext", label: "Find next", group: "Find", binding: "Mod+G", run: quickFindNext },
+  { id: "findPrev", label: "Find previous", group: "Find", binding: "Mod+Shift+G", run: quickFindPrevious },
   { id: "selectNext", label: "Select next instance", group: "Find", binding: "Mod+D", run: selectNextInstance },
   { id: "selectPrevious", label: "Select previous instance", group: "Find", binding: "Mod+Shift+D", run: selectPreviousInstance },
 

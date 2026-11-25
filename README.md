@@ -21,14 +21,24 @@ conversation, including page citations that open the PDF at the cited passage.
   the document has been reviewed, your sources appear as chips, and the conversation
   runs below. Under the composer is what the document has cost with each service
   (for example "OpenAI $0.0042 · Anthropic $0.0310"); hovering a service shows the
-  cost by model.
-- **Document** (right). Hush's editor. Your own messages in the conversation can be
-  dragged into it by their grip (⠿). A text selection inside one of your messages can
-  be dragged on its own. **Add to document** puts a message at the caret; while part
-  of the message is selected, it reads **Add selection to document** and adds just
-  that part. Copy and paste also work. The AI's replies and reviews can't be selected
-  or dragged, because the document is meant to be yours: their links and citations
-  can be pressed, and their copy buttons copy them whole.
+  cost by model. To its right, **Use Local** moves this document's conversation to
+  the on-device model, with its attached sources; the costs then give way to
+  **Use APIs**, which moves it back. The choice is kept with the document, and
+  Review keeps its own service.
+- **Document** (right). Hush's editor, with Hush's quick find: **⌘F** opens a small
+  bar at the top of the document that marks the matches as you type (ignoring case)
+  and selects the first after the caret. ⌘G and ⌘⇧G step through them. **→** at the
+  end of the field, or Enter, closes the bar and leaves the match selected; Esc or
+  ⌘F again also closes it. The chevron at its head opens **Replace**: Replace all
+  changes every match at once, and a single undo takes it back.
+
+  Your own messages in the conversation can be dragged into the document by their
+  grip (⠿). A text selection inside one of your messages can be dragged on its own.
+  **Add to document** puts a message at the caret; while part of the message is
+  selected, it reads **Add selection to document** and adds just that part. Copy
+  and paste also work. The AI's replies and reviews can't be selected or dragged,
+  because the document is meant to be yours: their links and citations can be
+  pressed, and their copy buttons copy them whole.
   - **Suggest placement**, on each of your messages, shows where the message would
     fit. Hovering it scrolls the document to the sentence the message would follow
     and lights that sentence briefly. Pressing it also puts the caret there, ready
@@ -45,12 +55,15 @@ conversation, including page citations that open the PDF at the cited passage.
     - The bar shows the latest review and folds to a single line. **Earlier** lists
       the previous reviews with their times, to read again.
     - **Work on this** on a point narrows the bar to that point alone, and the guide
-      is told you're working on it. The point folds to a single line of its own
+      is told you're working on it. **Ignore** folds the point to its title, with
+      **Revisit** to open it again. The point folds to a single line of its own
       ("Working on: Evidence"). **Item complete** greys the point out in the review;
       **Stop working** leaves it as it was. Either way the bar goes back to the
       whole review.
     - A new review takes over from the last, and a point you were working on is put
-      down.
+      down. The reviewer is given its earlier reviews, with what you did with each
+      point (completed, ignored, being worked on), so it says what has been
+      addressed since and doesn't press points you ignored.
   - **Quoted words of your document**, in a review or a reply, are links: pressing
     one scrolls the document to those words and lights them. If you've changed the
     words since, it says so.
@@ -105,7 +118,11 @@ installed.
 
 The rest of Settings:
 
-- **Appearance:** theme and the document's look.
+- **Appearance:** theme, the document's look, and its caret, after Hush's: a line,
+  a thick line, a block or an underline; a colour (six that suit both appearances,
+  or your own); and whether it blinks, pulses or holds still while you pause. While
+  you're in the conversation the caret stays where you left it, grey and faded, so
+  you can see where Add to document will put a message.
 - **Editor:** writing modes, word count, spelling.
 - **Chat:** the conversation's text size, and whether the guide's questions are
   underlined.

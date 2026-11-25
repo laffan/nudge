@@ -3,8 +3,12 @@
 // asked for a numbered list, each point opening with a short title in
 // bold (prompts.ts); a bulleted list is accepted when there is no numbered
 // one. The points are what the writer works on (Work on this) and marks
-// complete, so their positions in the list are what a review's `done` and
-// the document's `working` refer to.
+// complete or ignores, so their positions in the list are what a review's
+// `done` and `ignored` and the document's `working` refer to.
+//
+// The reviewer is given its earlier reviews, each point marked with what
+// the writer did with it (`earlierReviewsBlock`), so a new review can say
+// what has been addressed since.
 import type { NudgeDoc, Review } from "../types";
 import { plainDocRefs } from "./citations";
 
@@ -115,4 +119,38 @@ export function workingPoint(doc: NudgeDoc): { review: Review; point: ReviewPoin
   const { points } = parseReview(review.content);
   const point = points[w.item];
   return point ? { review, point, index: w.item, of: points.length } : null;
+}
+
+/** A point as the reviewer reads it back: what the writer did with it. */
+function pointStatus(doc: NudgeDoc, r: Review, i: number): string {
+  if (r.done.includes(i)) return "The writer marked this complete.";
+  if (r.ignored?.includes(i)) return "The writer chose to ignore this.";
+  if (doc.working?.reviewId === r.id && doc.working.item === i) return "The writer is working on this.";
+  return "Not marked by the writer.";
+}
+
+function reviewForReviewer(doc: NudgeDoc, r: Review): string {
+  const when = new Date(r.ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const { intro, points, outro } = parseReview(r.content);
+  const body = points.length
+    ? [intro, points.map((p, i) => `${p.n}. ${p.text}\n   [${pointStatus(doc, r, i)}]`).join("\n"), outro].filter(Boolean).join("\n\n")
+    : r.content.trim();
+  return `## Review of ${when}${r.withSources === false ? " (made without the sources)" : ""}\n\n${body}`;
+}
+
+/** The document's reviews so far, for the next review: the newest that fit
+ *  in `maxChars`, oldest first. Empty when there are none. */
+export function earlierReviewsBlock(doc: NudgeDoc, maxChars: number): string {
+  const kept: string[] = [];
+  let used = 0;
+  for (const r of [...doc.reviews].reverse()) {
+    const text = reviewForReviewer(doc, r);
+    if (kept.length && used + text.length > maxChars) break;
+    kept.unshift(text.length > maxChars ? `${text.slice(0, maxChars)}\n[…]` : text);
+    used += text.length;
+  }
+  if (!kept.length) return "";
+  const left = doc.reviews.length - kept.length;
+  const note = left ? `\n\n(${left} older review${left === 1 ? "" : "s"} left out.)` : "";
+  return `<earlier_reviews>\n${kept.join("\n\n---\n\n")}${note}\n</earlier_reviews>`;
 }

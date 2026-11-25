@@ -11,6 +11,7 @@ import { updateCurrent } from "../lib/documents";
 import { toast, useApp, usePrefs } from "../lib/store";
 import { invoke, isTauri } from "../lib/tauri";
 import { findInDocument, findPlacement, showPlacement } from "../editor/placement";
+import { caretClasses, caretColor } from "../editor/caret";
 import { copyText } from "./chat/MessageBubble";
 import { CopyIcon, ExportIcon } from "./Icons";
 import { ReviewButton } from "./ReviewButton";
@@ -50,7 +51,14 @@ export function DocumentPane() {
   const prefs = usePrefs();
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorHandles | null>(null);
+  // Whether the writer has placed the caret in this document. Until then
+  // Add to document goes to the end, and the caret isn't shown at rest
+  // (editor/caret.ts).
   const focusedOnce = useRef(false);
+  const placed = () => {
+    focusedOnce.current = true;
+    host.current?.setAttribute("data-placed", "");
+  };
   const [words, setWords] = useState(0);
 
   // One editor per document.
@@ -59,6 +67,7 @@ export function DocumentPane() {
     const initial = useApp.getState().current?.content ?? "";
     setWords(countWords(initial));
     focusedOnce.current = false;
+    host.current.removeAttribute("data-placed");
     let wordTimer: ReturnType<typeof setTimeout> | null = null;
     const ed = createEditor(
       host.current,
@@ -75,7 +84,7 @@ export function DocumentPane() {
         spellcheck: usePrefs.getState().spellcheck,
       },
     );
-    ed.view.contentDOM.addEventListener("focus", () => (focusedOnce.current = true));
+    ed.view.contentDOM.addEventListener("focus", placed);
     editor.current = ed;
     activeEditor = ed;
     return () => {
@@ -100,7 +109,7 @@ export function DocumentPane() {
       return;
     }
     showPlacement(ed.view, p, placementRequest.mode === "place");
-    if (placementRequest.mode === "place") focusedOnce.current = true;
+    if (placementRequest.mode === "place") placed();
   }, [placementRequest]);
 
   // A [[doc:…]] reference pressed in a reply or a review: scroll to those
@@ -124,7 +133,7 @@ export function DocumentPane() {
     const v = ed.view;
     const pos = focusedOnce.current ? v.state.selection.main.head : v.state.doc.length;
     insertSnippet(v, insertRequest.text, pos);
-    focusedOnce.current = true;
+    placed();
   }, [insertRequest]);
 
   if (!docId) return <section className="document" />;
@@ -158,7 +167,11 @@ export function DocumentPane() {
           <ReviewButton />
         </div>
       </header>
-      <div className={`doc-editor${prefs.focusMode ? " focus" : ""}`} ref={host} />
+      <div
+        className={`doc-editor ${caretClasses(prefs.caretShape, prefs.caretAnimation)}${prefs.focusMode ? " focus" : ""}`}
+        style={{ "--caret": caretColor(prefs.caretColor) } as React.CSSProperties}
+        ref={host}
+      />
     </section>
   );
 }

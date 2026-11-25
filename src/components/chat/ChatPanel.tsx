@@ -3,15 +3,17 @@
 // stays at the head (it can be edited), with the review bar attached under
 // it once the document has been reviewed (ReviewBar.tsx) and the sources
 // under that; the conversation runs below, and the composer is at the
-// foot, over what the document has cost with each service.
+// foot, over what the document has cost with each service and the switch
+// between the online services and the on-device model.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { beginConversation, retryLast, sendMessage, stopReply } from "../../lib/ai/chat";
+import { localLabel } from "../../lib/ai/localModels";
 import { formatUsd, modelLabel } from "../../lib/ai/models";
 import { documentCosts } from "../../lib/ai/usage";
 import { updateCurrent } from "../../lib/documents";
-import { providerLabel, choiceFor, readyFor } from "../../lib/settings";
-import { useApp, usePrefs } from "../../lib/store";
-import type { NudgeDoc, Provider } from "../../lib/types";
+import { chatChoice, choiceFor, modelOf, onlineChoice, providerLabel, readyFor } from "../../lib/settings";
+import { toast, useApp, usePrefs } from "../../lib/store";
+import type { NudgeDoc } from "../../lib/types";
 import { RetryIcon, SendIcon, StopIcon } from "../Icons";
 import { MessageBubble, StreamingBubble } from "./MessageBubble";
 import { ReviewBar } from "./ReviewBar";
@@ -160,15 +162,46 @@ function Composer({ busy }: { busy: boolean }) {
   );
 }
 
-/** Under the composer: the service answering the chat, and what this
- *  document has cost with each service used for it (its conversation and
- *  its reviews), with the detail by model on hover. */
-function CostFoot({ doc, chat }: { doc: NudgeDoc; chat: Provider | null }) {
+/** Under the composer: what this document has cost with each service used
+ *  for it (its conversation and its reviews), with the detail by model on
+ *  hover, and to its right Use Local, which moves the conversation to the
+ *  on-device model. There the costs give way to Use APIs, which moves it
+ *  back. The move is this document's own (NudgeDoc.chatService); the
+ *  sources go with it, as the on-device model reads them (context.ts). */
+function CostFoot({ doc }: { doc: NudgeDoc }) {
+  const settings = useApp((s) => s.settings);
+  const keys = useApp((s) => s.keys);
+  const openSettings = useApp((s) => s.openSettings);
+  if (!settings) return <div className="chat-foot" />;
+  const chat = chatChoice(settings, keys, doc).provider;
+  const online = onlineChoice(settings, keys);
+  const move = (to: "local" | "online") => {
+    if (to === "local" && !settings.localModel) {
+      toast("Download an on-device model first");
+      openSettings("offline");
+    } else if (to === "online" && !online) {
+      toast("Add an API key first");
+      openSettings("ai");
+    } else updateCurrent((d) => ({ ...d, chatService: to }));
+  };
+  if (chat === "local") {
+    return (
+      <div className="chat-foot">
+        <button
+          className="foot-switch"
+          title={online ? `Continue this conversation with ${modelLabel(modelOf(settings, online))}` : "Add an API key in Settings → AI"}
+          onClick={() => move("online")}
+        >
+          Use APIs
+        </button>
+      </div>
+    );
+  }
   const costs = documentCosts(doc);
   const use = { chat: "chat", review: "review" } as const;
   return (
     <div className="chat-foot">
-      {chat && !costs.some((c) => c.provider === chat) && <span>{providerLabel(chat)}</span>}
+      {!costs.some((c) => c.provider === chat) && <span>{providerLabel(chat)}</span>}
       {costs.map((c) => (
         <span
           key={c.provider}
@@ -178,6 +211,13 @@ function CostFoot({ doc, chat }: { doc: NudgeDoc; chat: Provider | null }) {
           {providerLabel(c.provider)} {formatUsd(c.costUsd)}
         </span>
       ))}
+      <button
+        className="foot-switch"
+        title={settings.localModel ? `Continue this conversation with ${localLabel(settings.localModel)}, on this device` : "Download an on-device model in Settings → Offline model"}
+        onClick={() => move("local")}
+      >
+        Use Local
+      </button>
     </div>
   );
 }
@@ -213,7 +253,6 @@ export function ChatPanel() {
   const streaming = useApp((s) => (s.streaming && s.streaming.docId === s.current?.id ? s.streaming : null));
   const anyStreaming = useApp((s) => Boolean(s.streaming));
   const insert = useApp((s) => s.insertIntoDocument);
-  const chatUse = useApp((s) => (s.settings ? choiceFor(s.settings, "chat").provider : null));
   const fontSize = usePrefs((s) => s.chatFontSize);
   const selected = useMessageSelection();
   const scroller = useRef<HTMLDivElement>(null);
@@ -272,7 +311,7 @@ export function ChatPanel() {
         )}
       </div>
       <Composer busy={Boolean(streaming)} />
-      <CostFoot doc={doc} chat={chatUse} />
+      <CostFoot doc={doc} />
     </section>
   );
 }

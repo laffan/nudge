@@ -1,6 +1,11 @@
 // The review bar, attached under the goal: the latest review of the
 // document (the Review button), and the way into the earlier ones.
 //
+// Each point of the latest review offers Work on this and Ignore. Ignore
+// folds the point to its title, with Revisit to unfold it; the reviewer
+// is told which points were ignored when it next reviews the document
+// (lib/ai/context.ts), so it doesn't press them again.
+//
 // It folds in two tiers. The review as a whole opens and closes. Work on
 // this on one of its points narrows the bar to that point alone, with Item
 // complete and Stop working, and the point folds on its own to a single
@@ -29,13 +34,20 @@ function reviewer(r: Review): string {
 /** Said of a review made without the attached PDFs (the Review menu). */
 const WITHOUT = "without the attached PDFs";
 
-function setDone(reviewId: string, item: number, done: boolean): void {
+/** Mark a point of a review complete or ignored, or take the mark off. */
+function setMark(reviewId: string, item: number, mark: "done" | "ignored", on: boolean): void {
+  const toggle = (list: number[] = []) => (on ? [...new Set([...list, item])].sort((a, b) => a - b) : list.filter((i) => i !== item));
   updateCurrent((d) => ({
     ...d,
-    reviews: d.reviews.map((r) =>
-      r.id !== reviewId ? r : { ...r, done: done ? [...new Set([...r.done, item])].sort((a, b) => a - b) : r.done.filter((i) => i !== item) },
-    ),
+    reviews: d.reviews.map((r) => (r.id !== reviewId ? r : { ...r, [mark]: toggle(r[mark]) })),
   }));
+}
+
+/** "2 of 6 complete · 1 ignored", or nothing while none are marked. */
+function tally(r: Review, total: number): string {
+  const ignored = r.ignored?.length ?? 0;
+  const bits = [r.done.length ? `${r.done.length} of ${total} complete` : "", ignored ? `${ignored} ignored` : ""];
+  return total ? bits.filter(Boolean).join(" · ") : "";
 }
 
 /** A review's overall sentences, its points (each with what can be done
@@ -49,6 +61,19 @@ function ReviewContent({ review, sources, workable }: { review: Review; sources:
       <ol className="review-points">
         {points.map((p, i) => {
           const done = review.done.includes(i);
+          if (review.ignored?.includes(i)) {
+            return (
+              <li key={i} value={p.n} className="ignored">
+                <span className="point-title">{p.title}</span>
+                <span className="point-ignored">Ignored</span>
+                {workable && (
+                  <button className="link revisit" onClick={() => setMark(review.id, i, "ignored", false)}>
+                    Revisit
+                  </button>
+                )}
+              </li>
+            );
+          }
           return (
             <li key={i} value={p.n} className={done ? "done" : undefined}>
               <ReplyMarkdown content={p.text} sources={sources} />
@@ -59,14 +84,19 @@ function ReviewContent({ review, sources, workable }: { review: Review; sources:
                       <span className="point-done">
                         <CheckIcon size={12} /> Complete
                       </span>
-                      <button className="link" onClick={() => setDone(review.id, i, false)}>
+                      <button className="link" onClick={() => setMark(review.id, i, "done", false)}>
                         Reopen
                       </button>
                     </>
                   ) : (
-                    <button className="take-up" onClick={() => updateCurrent((d) => ({ ...d, working: { reviewId: review.id, item: i } }))}>
-                      Work on this
-                    </button>
+                    <>
+                      <button className="take-up" onClick={() => updateCurrent((d) => ({ ...d, working: { reviewId: review.id, item: i } }))}>
+                        Work on this
+                      </button>
+                      <button className="ignore" title="Fold this point away" onClick={() => setMark(review.id, i, "ignored", true)}>
+                        Ignore
+                      </button>
+                    </>
                   )}
                 </div>
               )}
@@ -112,7 +142,7 @@ function EarlierReviews({ reviews, sources }: { reviews: Review[]; sources: Sour
               <span className="review-meta">
                 {reviewer(r)}
                 {r.withSources === false && ` · ${WITHOUT}`}
-                {total > 0 && r.done.length > 0 && ` · ${r.done.length} of ${total} complete`}
+                {tally(r, total) && ` · ${tally(r, total)}`}
               </span>
             </Toggle>
             {open && (
@@ -174,7 +204,7 @@ export function ReviewBar({ doc, sources }: { doc: NudgeDoc; sources: Source[] }
   if (working) {
     const { review, point, index, of } = working;
     const finish = (complete: boolean) => {
-      if (complete) setDone(review.id, index, true);
+      if (complete) setMark(review.id, index, "done", true);
       updateCurrent((d) => ({ ...d, working: null }));
       setOpen(true);
       setHistory(false);
@@ -218,11 +248,7 @@ export function ReviewBar({ doc, sources }: { doc: NudgeDoc; sources: Source[] }
         <Toggle open={open} title={open ? "Fold the review" : "Show the review"} onClick={() => setOpen(!open)}>
           <span className="review-label">Review</span>
           <span className="review-when">{history && open ? "Earlier reviews" : reviewWhen(latest.ts)}</span>
-          {!history && total > 0 && latest.done.length > 0 && (
-            <span className="review-meta">
-              {latest.done.length} of {total} complete
-            </span>
-          )}
+          {!history && tally(latest, total) && <span className="review-meta">{tally(latest, total)}</span>}
         </Toggle>
         {earlier.length > 0 && (
           <button

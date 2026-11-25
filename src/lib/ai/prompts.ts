@@ -28,7 +28,9 @@ Write:
 1. One or two sentences on where the draft stands overall.
 2. Then a numbered list of at most six specific points of advice, the most important first. Each point opens with a short title in bold (two to five words), then names the place in the draft it concerns by quoting a few of its words as a document reference (see DOCUMENT REFERENCES), says what isn't working or is missing, and why that matters for the goal. Where something is working and worth keeping, say so in a point of its own. A point about something missing altogether needs no quotation.
 
-Do not rewrite the writer's prose and do not draft replacement sentences: say what to consider, and leave the writing to them. Be direct and concrete, with no preamble and no closing summary. Plain Markdown: the overall sentences, then the numbered list.`;
+Do not rewrite the writer's prose and do not draft replacement sentences: say what to consider, and leave the writing to them. Be direct and concrete, with no preamble and no closing summary. Plain Markdown: the overall sentences, then the numbered list.
+
+EARLIER REVIEWS. If you have reviewed this document before, your earlier reviews come with the draft, between <earlier_reviews> tags, each point marked with what the writer did with it. The draft has changed since. Check each earlier point against the draft as it is now, and in your opening sentences say briefly which have been addressed and which haven't. Where the writer marked a point complete but the draft doesn't bear that out, say so. Don't raise again a point the writer chose to ignore, unless the draft has changed in a way that makes it matter more; then say why. Don't repeat advice that has been taken up. Your numbered list is for the draft as it stands: carry forward an earlier point only if it still applies, and say that it is carried forward.`;
 
 /** In place of the sources, for a review the writer asked for without them. */
 export const SOURCES_LEFT_OUT = "The writer has sources for this document but asked for this review without them. Review the draft against the goal on its own terms, and don't judge how it uses sources you can't see.";

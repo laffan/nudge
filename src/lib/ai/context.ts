@@ -13,7 +13,7 @@ import type { NudgeDoc, Source, ZoteroAnnotation } from "../types";
 import { sourcePages } from "../sources";
 import { markedText } from "../pdf/text";
 import { CITATIONS, DOC_REFS, GUIDE, REVIEW_SHARED, REVIEWER, SOURCES_LEFT_OUT, workingOnBlock } from "./prompts";
-import { workingPoint } from "./reviews";
+import { earlierReviewsBlock, workingPoint } from "./reviews";
 import { retrieve } from "./retrieval";
 
 /** Rough characters per token for English prose. */
@@ -101,6 +101,7 @@ export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTok
   const anyText = ready.some((s) => s.hasFile && (s.chars ?? 0) > 0);
   const parts: string[] = [];
   let docChars = 60_000;
+  let earlierChars = 30_000;
   let passageBlock = "";
   if (!local) {
     const budget = Math.max(60_000, Math.floor(400_000 / Math.max(1, ready.length)));
@@ -115,8 +116,9 @@ export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTok
   } else {
     const budget = Math.max(2000, (local.nCtx - local.replyTokens - 200) * CPT);
     for (const s of ready) parts.push(sourceHead(s, doc.sources.indexOf(s) + 1, Math.floor((budget * 0.1) / Math.max(1, ready.length))));
-    docChars = Math.floor(budget * 0.45);
-    const passages = anyText ? await retrieve(ready, `${doc.goal} ${doc.content}`.slice(0, 4000), Math.floor(budget * 0.25)) : [];
+    docChars = Math.floor(budget * 0.4);
+    earlierChars = Math.floor(budget * 0.12);
+    const passages = anyText ? await retrieve(ready, `${doc.goal} ${doc.content}`.slice(0, 4000), Math.floor(budget * 0.2)) : [];
     if (passages.length) {
       passageBlock =
         "\n\n<passages>\nPassages from the sources that may bear on the draft:\n" +
@@ -137,9 +139,14 @@ export async function buildReview(doc: NudgeDoc, local: { nCtx: number; replyTok
   ]
     .filter(Boolean)
     .join("\n\n");
+  // The earlier reviews ride with the draft rather than in the system
+  // prompt, which stays the same from one review to the next and so stays
+  // cached.
+  const earlier = earlierReviewsBlock(doc, earlierChars);
+  const ask = earlier ? "Review this draft against the goal, and against your earlier reviews." : "Review this draft against the goal.";
   return {
     system,
-    messages: [{ role: "user", content: `${documentBlock(doc.content, docChars)}${passageBlock}\n\nReview this draft against the goal.` }],
+    messages: [{ role: "user", content: `${earlier ? `${earlier}\n\n` : ""}${documentBlock(doc.content, docChars)}${passageBlock}\n\n${ask}` }],
   };
 }
 
