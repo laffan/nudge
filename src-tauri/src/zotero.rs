@@ -29,14 +29,21 @@ async fn base(state: &AppState) -> Result<(String, String)> {
     Ok((format!("{API}/{kind}/{id}"), key))
 }
 
-fn status_error(what: &str, status: reqwest::StatusCode) -> Error {
+/// An error for a refused request, with Zotero's own reason when it gave
+/// one (its error bodies are a line of plain text, e.g. "Cannot specify
+/// 'itemType' more than once").
+async fn status_error(what: &str, resp: reqwest::Response) -> Error {
+    let status = resp.status();
+    let reason = resp.text().await.unwrap_or_default();
+    let reason: String = reason.trim().chars().take(200).collect();
     let hint = match status.as_u16() {
         403 => " — the key may lack access to this library",
         404 => " — not found in this library",
         429 => " — Zotero asks us to slow down; try again in a moment",
         _ => "",
     };
-    Error::msg(format!("Zotero {what} failed (HTTP {status}){hint}"))
+    let said = if reason.is_empty() || reason.starts_with('<') { String::new() } else { format!(": {reason}") };
+    Error::msg(format!("Zotero {what} failed (HTTP {status}){said}{hint}"))
 }
 
 async fn get_json(state: &AppState, url: &str, query: &[(&str, String)]) -> Result<(Value, usize)> {
@@ -50,7 +57,7 @@ async fn get_json(state: &AppState, url: &str, query: &[(&str, String)]) -> Resu
         .send()
         .await?;
     if !resp.status().is_success() {
-        return Err(status_error("request", resp.status()));
+        return Err(status_error("request", resp).await);
     }
     let total = resp
         .headers()
@@ -116,9 +123,10 @@ pub async fn search(state: &AppState, q: &str, collection: Option<&str>) -> Resu
     let mut query = vec![
         ("format", "json".to_string()),
         ("include", "data".to_string()),
-        // Repeated parameters are ANDed: neither standalone files nor notes.
+        // Zotero takes `itemType` once ("Cannot specify 'itemType' more
+        // than once"): standalone files are left out here, standalone notes
+        // below.
         ("itemType", "-attachment".to_string()),
-        ("itemType", "-note".to_string()),
         ("limit", "50".to_string()),
         ("sort", "dateModified".to_string()),
         ("direction", "desc".to_string()),
@@ -128,7 +136,16 @@ pub async fn search(state: &AppState, q: &str, collection: Option<&str>) -> Resu
         query.push(("qmode", "titleCreatorYear".to_string()));
     }
     let (v, _) = get_json(state, &url, &query).await?;
-    Ok(v.as_array().cloned().unwrap_or_default())
+    Ok(works_only(v.as_array().cloned().unwrap_or_default()))
+}
+
+/// Works, not the notes and files that can also stand at the top of a
+/// library: only works have a PDF and annotations to attach.
+fn works_only(items: Vec<Value>) -> Vec<Value> {
+    items
+        .into_iter()
+        .filter(|i| !matches!(i["data"]["itemType"].as_str(), Some("note" | "attachment" | "annotation")))
+        .collect()
 }
 
 /// An item's children: its attachments and notes.
@@ -171,7 +188,25 @@ pub async fn download(state: &AppState, att_key: &str) -> Result<Vec<u8>> {
         .send()
         .await?;
     if !resp.status().is_success() {
-        return Err(status_error("file download", resp.status()));
+        return Err(status_error("file download", resp).await);
     }
     Ok(resp.bytes().await?.to_vec())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn works_only_drops_standalone_notes_and_files() {
+        let items = vec![
+            json!({ "key": "A", "data": { "itemType": "journalArticle" } }),
+            json!({ "key": "B", "data": { "itemType": "note" } }),
+            json!({ "key": "C", "data": { "itemType": "attachment" } }),
+            json!({ "key": "D", "data": { "itemType": "book" } }),
+        ];
+        let keys: Vec<_> = works_only(items).iter().map(|i| i["key"].as_str().unwrap().to_string()).collect();
+        assert_eq!(keys, ["A", "D"]);
+    }
 }
