@@ -83,6 +83,9 @@ src/
     caret.ts         the caret's shape, colour and animation; the caret at rest
     click-focus.ts   a click back into the editor places the caret and selects
                      nothing (WebKit's scroll on focus)
+    hand-selection.ts
+                     whether a selection was made by hand or with the keys, so
+                     the writing modes leave a word picked out for a menu alone
     google-doc-paste.ts
                      a paste from Google Docs as Markdown (Hush's converter)
     placement.ts     Suggest placement: the sentence a message would follow, and
@@ -331,6 +334,25 @@ scroll of the editor is undone, for a WebKit that scrolls a frame later. Typewri
 mode likewise brings a clicked line to its dashed line only once the button is up
 (`typewriter.ts`).
 
+## Selections made by hand
+
+macOS and iPadOS open their menus for a selection (spelling, Look Up, Copy) beside
+the selected words, and a right-click there selects the word under the pointer
+first. Two things in the writing modes moved the words out from under such a menu:
+typewriter mode scrolled every new selection to its line, and focus mode lit the
+selected words' sentence, which redraws that text; CodeMirror then sets the
+selection again, and on iPad that can send the menu astray.
+
+`editor/hand-selection.ts` tells the two kinds of selection apart. CodeMirror labels
+selections made with the keys and with the pointer or a finger alike ("select"), so
+it keeps, per editor, when a key was last pressed in it and when the pointer or a
+finger last went down there (DOM event observers, which see keys the keymaps take),
+and a selection counts as made by hand when the press came later. It also tracks
+whether a button or finger is still down; a context menu's opening counts as the
+release. With it, typewriter mode doesn't scroll for a selection made by hand, and
+on iPad (the `ipados` class) focus mode keeps its dimming as it was for one, until
+the writer types, moves with the keys, or taps.
+
 ## Typewriter mode
 
 `editor/typewriter.ts`, after Hush's (`plugins/typewriter.js` and its pane line). A
@@ -342,11 +364,14 @@ editor.ts), so turning the mode off takes everything below away.
   a mouse, trackpad or finger (pointer events, `touch-action: none`). Where it sits
   is a fraction of the column's height, from 0.15 to 0.85, saved on release
   (`Prefs.typewriterPosition`, 0.5 to begin with).
-- **The caret on the line.** After each edit, selection change or return of focus,
-  a measure pass scrolls so the foot of the caret's line meets the dashed line. A
-  click waits for the button to come up (see above). A change of the column's size
-  (a ResizeObserver) moves the line and, while the writer is in the text, the caret
-  with it.
+- **The caret on the line.** After each edit, move with the keys, or return of
+  focus, a measure pass scrolls so the foot of the caret's line meets the dashed
+  line. A click or tap (by hand, see above) waits until the button or finger is up
+  and then 500 ms more, longer than the gap inside a double-click, so that the
+  second click lands on the same words, and then scrolls only if the caret was
+  placed; a selection made by hand stays where it is. A change of the column's
+  size (a ResizeObserver) moves the line and, while the writer is in the text, the
+  caret with it.
 - **Room at the ends.** `--tw-top` (padding on the scroller: the line's height in
   the column, less the first line and the content's own top padding) and
   `--tw-runway` (padding at the foot of the content, not the scroller, which WebKit

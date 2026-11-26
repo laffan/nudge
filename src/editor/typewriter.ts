@@ -12,13 +12,19 @@
 // doesn't count a scroller's own bottom padding as scrollable, as Hush
 // found; Nudge adds no blank lines to the document for it.
 //
-// A click puts its line on the dashed line only once the button is up.
-// Scrolling while it's still down moves the text under the pointer, and
+// Typing and moving with the keys keep the line on it at once. A click or
+// a tap waits until the button or finger is up and half a second has
+// passed, and then brings its line only if it placed the caret. Scrolling
+// while the button is down moves the text under the pointer, and
 // CodeMirror reads the smallest movement after that as a drag, selecting
-// from the click.
+// from the click; scrolling between the two clicks of a double-click puts
+// the second on other words. A selection made by hand (hand-selection.ts)
+// isn't scrolled at all: the menu macOS or iPadOS opens beside it would be
+// left behind.
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import { usePrefs } from "../lib/store";
+import { byHand, handClock, pointerHeld } from "./hand-selection";
 
 /** How near the top or bottom of the column the line can be dragged. */
 const MIN = 0.15;
@@ -26,10 +32,14 @@ const MAX = 0.85;
 
 const clamp = (p: number) => Math.min(MAX, Math.max(MIN, p));
 
+/** Longer than the gap between the two clicks of a double-click. */
+const SETTLE_MS = 500;
+
 class Typewriter {
   line: HTMLDivElement;
   position = clamp(usePrefs.getState().typewriterPosition);
   resize: ResizeObserver;
+  timer = 0;
 
   constructor(readonly view: EditorView) {
     this.line = document.createElement("div");
@@ -108,14 +118,23 @@ class Typewriter {
   update(u: ViewUpdate): void {
     if (u.geometryChanged) this.layout(false);
     if (!(u.selectionSet || u.docChanged || u.focusChanged) || !u.view.hasFocus) return;
-    if (u.transactions.some((tr) => tr.isUserEvent("select.pointer"))) {
-      document.addEventListener("mouseup", () => this.align(), { once: true, capture: true });
-      return;
-    }
+    if (byHand(u)) return this.settle();
+    window.clearTimeout(this.timer);
     this.align();
   }
 
+  /** After a click or tap: once it's over, bring a placed caret's line. */
+  settle(): void {
+    window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      if (pointerHeld()) return this.settle();
+      const { view } = this;
+      if (view.hasFocus && view.state.selection.main.empty) this.align();
+    }, SETTLE_MS);
+  }
+
   destroy(): void {
+    window.clearTimeout(this.timer);
     this.resize.disconnect();
     this.line.remove();
     this.view.dom.style.removeProperty("--tw-top");
@@ -123,4 +142,8 @@ class Typewriter {
   }
 }
 
-export const typewriterMode: Extension = [EditorView.editorAttributes.of({ class: "cm-typewriter" }), ViewPlugin.fromClass(Typewriter)];
+export const typewriterMode: Extension = [
+  EditorView.editorAttributes.of({ class: "cm-typewriter" }),
+  handClock,
+  ViewPlugin.fromClass(Typewriter),
+];

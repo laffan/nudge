@@ -134,7 +134,10 @@ The rest of Settings:
 - **Editor:** Hush's writing modes, word count, spelling. Focus mode (⌘S) dims all
   but the sentence you're in. Typewriter mode (⌘⇧T) keeps the line you're writing on
   a dashed line across the document, the text scrolling past it; drag the line to
-  where you like to write, and it stays there.
+  where you like to write, and it stays there. A click or tap brings its line to
+  the dashed line after a moment. Words you select with the pointer or a finger
+  stay where they are in either mode, so the menu beside them (spelling, Look Up)
+  stays with them; on iPad, focus mode lights their sentence once you type or tap.
 - **Chat:** the conversation's text size, and whether the guide's questions are
   underlined.
 
