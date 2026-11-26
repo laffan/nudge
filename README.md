@@ -141,6 +141,24 @@ The rest of Settings:
 - **Chat:** the conversation's text size, and whether the guide's questions are
   underlined.
 
+## Download
+
+The Mac app is on the [Releases](https://github.com/laffan/nudge/releases) page:
+`AppleSilicon.dmg` for M-series Macs, `MacIntel.dmg` for Intel Macs (macOS 13 or
+later). The builds are not signed with an Apple Developer certificate, so macOS
+blocks the app the first time. Drag it to Applications, then run this once in
+Terminal:
+
+```sh
+xattr -cr "/Applications/Nudge.app"
+```
+
+The iPad app is built and installed from Xcode; see [iPad](#ipad) below.
+
+Releases are made by the **Release** workflow (Actions → Release → Run workflow),
+which builds both Mac versions and leaves a draft release to review and publish. Its
+tag comes from the version in `src-tauri/tauri.conf.json`.
+
 ## Build
 
 Requires [Node.js](https://nodejs.org/) 20+, [Rust](https://rustup.rs/), CMake (for
